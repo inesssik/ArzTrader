@@ -4,6 +4,7 @@ const config: Config = {
     trailingComma: 'none',
     tabWidth: 2,
     semi: true,
+    printWidth: 120,
     singleQuote: true,
     arrowParens: 'avoid',
     importOrderSeparation: false,
