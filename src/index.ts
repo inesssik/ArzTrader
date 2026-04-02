@@ -4,11 +4,12 @@ import { container } from 'tsyringe';
 import { ArzApiService } from './ArzApiService';
 import { BotService } from './BotService';
 import { ConfigService } from './ConfigService';
-import { LoggerService } from './LoggerService';
-import { PrismaService } from './PrismaService';
-import { MarketSyncService } from './MarketSyncService';
-import { StatisticsService } from './StatisticsService';
 import { LavkaService } from './LavkaService';
+import { LoggerService } from './LoggerService';
+import { MarketSyncService } from './MarketSyncService';
+import { NotificationService } from './NotificationService';
+import { PrismaService } from './PrismaService';
+import { StatisticsService } from './StatisticsService';
 
 async function bootstrap() {
   container.resolve(ConfigService);
@@ -16,6 +17,7 @@ async function bootstrap() {
   container.resolve(PrismaService);
   container.resolve(ArzApiService);
   container.resolve(LavkaService);
+  container.resolve(NotificationService);
 
   const syncService = container.resolve(MarketSyncService);
   syncService.init();

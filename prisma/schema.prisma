@@ -13,8 +13,9 @@ enum MarketListingType {
 }
 
 model TelegramUser {
-  id       String  @id
-  username String?
+  id               String             @id
+  username         String?
+  userSubscription UserSubscription[]
 
   @@map("telegram_user")
 }
@@ -88,23 +89,44 @@ model PriceHistory {
 }
 
 model PlayerStallHistory {
-  id          Int      @id @default(autoincrement())
-  username    String
-  itemId      Int
-  item        Item     @relation(fields: [itemId], references: [id])
-  type        MarketListingType
-  price       Float
-  serverId    Int
-  
-  // Коли ми вперше побачили цей лот і коли востаннє
-  firstSeen   DateTime @default(now())
-  lastSeen    DateTime @default(now())
+  id       Int               @id @default(autoincrement())
+  username String
+  itemId   Int
+  item     Item              @relation(fields: [itemId], references: [id])
+  type     MarketListingType
+  price    Float
+  serverId Int
 
-  // Складений унікальний ключ. 
-  // Якщо цей самий гравець виставить цей самий товар за ТАКОЮ Ж ціною, 
-  // ми не створимо новий запис, а оновимо існуючий.
-  // Якщо він змінить ціну хоч на 1$ - створиться новий запис історії.
+  firstSeen DateTime @default(now())
+  lastSeen  DateTime @default(now())
+
   @@unique([username, itemId, type, price, serverId])
-  
-  @@index([username, serverId]) // Швидкий пошук всієї історії конкретного гравця
+  @@index([username, serverId]) 
+  @@index([lastSeen])
+  @@map("player_stall_history")
+}
+
+model UserSubscription {
+  id             String       @id @default(uuid())
+  userId         String
+  user           TelegramUser @relation(fields: [userId], references: [id])
+  subscriptionId Int
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  expiresAt      DateTime
+  settings       Json? // Зберігатимемо { "deviationPercent": 20 }
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([userId, subscriptionId]) // Користувач може мати лише одну активну підписку конкретного типу 
+  @@map("user_subscription")
+}
+
+model Subscription {
+  id    Int    @id
+  name  String
+  price Int
+
+  userSubscriptions UserSubscription[]
+
+  @@map("subscription")
 }

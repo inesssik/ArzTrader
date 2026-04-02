@@ -17,13 +17,7 @@ export class BotService {
   }
 
   private async registerHandlers() {
-    // await this.prismaService.user.create({
-    //   data: {
-    //     id: '1',
-    //     name: 'Alice'
-    //   }
-    // });
-    const user = await this.prismaService.telegramUser.findFirst({where: { id: '1' }});
+    const user = await this.prismaService.telegramUser.findFirst({ where: { id: '1' } });
     this.tgBot.hears('/start', ctx => ctx.reply(JSON.stringify(user)));
   }
 
@@ -33,5 +27,9 @@ export class BotService {
     this.tgBot.start({
       onStart: () => this.loggerService.info(`Bot has been started`)
     });
+  }
+
+  public async sendMessage(chatId: string | number, text: string, options?: any) {
+    return this.tgBot.api.sendMessage(chatId, text, options);
   }
 }

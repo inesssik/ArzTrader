@@ -1,38 +1,19 @@
+import pgFormat from 'pg-format';
 import { singleton } from 'tsyringe';
-import type { PrismaService } from './PrismaService';
+import { ConfigService } from './ConfigService';
+import { LoggerService } from './LoggerService';
+import { PrismaService } from './PrismaService';
 import { ListingTypes, type ParsedListing } from './types/types';
 
 @singleton()
 export class LavkaService {
-  // 15 хвилин таймаут для сесії гравця (якщо парсинг кожні 5 хв)
-  private readonly SESSION_TIMEOUT_MINUTES = 15;
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly configService: ConfigService,
+    private readonly loggerService: LoggerService
+  ) {}
 
-  constructor(private readonly prisma: PrismaService) {}
-
-  /**
-   * Головний метод. Викликається, коли прийшов новий гігантський JSON.
-   */
-  async syncFullMarket(listings: ParsedListing[]) {
-    if (listings.length === 0) return;
-
-    console.log(`[SYNC] Початок синхронізації ${listings.length} товарів...`);
-
-    // 1. Гарантуємо наявність усіх предметів у базі
-    const uniqueItemNames = [...new Set(listings.map(l => l.itemName))];
-    for (const name of uniqueItemNames) {
-      await this.prisma.item.upsert({
-        where: { name },
-        update: {},
-        create: { name }
-      });
-    }
-
-    const items = await this.prisma.item.findMany({
-      where: { name: { in: uniqueItemNames } }
-    });
-    const itemMap = new Map(items.map(i => [i.name, i.id]));
-
-    // 2. Готуємо дані для вставки в "Живий ринок"
+  private async syncListing(listings: ParsedListing[], itemMap: Map<string, number>) {
     const liveMarketData = listings.map(l => ({
       itemId: itemMap.get(l.itemName)!,
       type: l.type,
@@ -44,70 +25,152 @@ export class LavkaService {
       timestamp: l.timestamp
     }));
 
-    // 3. --- ЛОГІКА ІСТОРІЇ ГРАВЦІВ ---
-    const timeoutThreshold = new Date(Date.now() - this.SESSION_TIMEOUT_MINUTES * 60 * 1000);
+    const CHUNK_SIZE = 4000;
 
-    // Дістаємо ВСІ активні сесії з бази (щоб не робити запити в циклі)
-    const recentHistory = await this.prisma.playerStallHistory.findMany({
-      where: { lastSeen: { gte: timeoutThreshold } },
-      select: { id: true, username: true, itemId: true, type: true, price: true, serverId: true }
-    });
+    try {
+      await this.prismaService.$transaction(
+        async tx => {
+          this.loggerService.info(`[SYNC] Створення тимчасової таблиці...`);
+          await tx.$executeRawUnsafe(`
+            CREATE TEMP TABLE "market_listing_temp" (LIKE "market_listing" INCLUDING ALL) ON COMMIT DROP;
+          `);
 
-    // Робимо швидку мапу: "username_itemId_type_price_serverId" -> historyId
-    const activeSessionsMap = new Map(
-      recentHistory.map(h => [`${h.username}_${h.itemId}_${h.type}_${h.price}_${h.serverId}`, h.id])
-    );
+          this.loggerService.info(`[SYNC] Заповнення тимчасової таблиці...`);
+          for (let i = 0; i < liveMarketData.length; i += CHUNK_SIZE) {
+            const chunk = liveMarketData.slice(i, i + CHUNK_SIZE);
 
-    const historyOperations = [];
-    const createdSessions = new Set<string>(); // Щоб не дублювати create в межах одного парсингу
+            const values = chunk.map(item => [
+              item.itemId,
+              item.type,
+              item.price,
+              item.quantity,
+              item.username,
+              item.lavkaUid,
+              item.serverId,
+              item.timestamp.toISOString()
+            ]);
 
-    for (const l of listings) {
-      const itemId = itemMap.get(l.itemName)!;
-      const sessionKey = `${l.username}_${itemId}_${l.type}_${l.price}_${l.serverId}`;
-      const activeHistoryId = activeSessionsMap.get(sessionKey);
+            const query = pgFormat(
+              'INSERT INTO "market_listing_temp" ("itemId", "type", "price", "quantity", "username", "lavkaUid", "serverId", "timestamp") VALUES %L ON CONFLICT DO NOTHING;',
+              values
+            );
 
-      if (activeHistoryId) {
-        // Оновлюємо існуючу сесію
-        historyOperations.push(
-          this.prisma.playerStallHistory.update({
-            where: { id: activeHistoryId },
-            data: { lastSeen: l.timestamp }
-          })
-        );
-      } else if (!createdSessions.has(sessionKey)) {
-        // Створюємо нову сесію
-        historyOperations.push(
-          this.prisma.playerStallHistory.create({
-            data: {
-              username: l.username,
-              itemId: itemId,
-              type: l.type,
-              price: l.price,
-              serverId: l.serverId,
-              firstSeen: l.timestamp,
-              lastSeen: l.timestamp
-            }
-          })
-        );
-        createdSessions.add(sessionKey);
-      }
+            await tx.$executeRawUnsafe(query);
+
+            this.loggerService.info(
+              `[SYNC] [Shadow] Завантажено ${Math.min(i + CHUNK_SIZE, liveMarketData.length)} записів`
+            );
+          }
+
+          this.loggerService.info(`[SYNC] Швидка підміна даних ринку...`);
+          await tx.$executeRawUnsafe(`TRUNCATE TABLE "market_listing" RESTART IDENTITY;`);
+          await tx.$executeRawUnsafe(`INSERT INTO "market_listing" SELECT * FROM "market_listing_temp";`);
+        },
+        {
+          maxWait: 15000,
+          timeout: 120000
+        }
+      );
+    } catch (error) {
+      this.loggerService.error(`[SYNC] КРИТИЧНА ПОМИЛКА ОНОВЛЕННЯ РИНКУ:`, error);
+      throw error;
+    }
+  }
+
+  async syncFullMarket(listings: ParsedListing[]) {
+    if (listings.length === 0) {
+      this.loggerService.info(`[SYNC] Немає товарів для синхронізації...`);
+      return;
     }
 
-    await this.prisma.$transaction([
-      this.prisma.marketListing.deleteMany({}),
+    this.loggerService.info(`[SYNC] Початок синхронізації ${listings.length} товарів...`);
 
-      this.prisma.marketListing.createMany({
-        data: liveMarketData
-      }),
+    const uniqueItemNames = [...new Set(listings.map(l => l.itemName))];
+    await this.prismaService.item.createMany({
+      data: uniqueItemNames.map(name => ({ name })),
+      skipDuplicates: true
+    });
 
-      ...historyOperations
-    ]);
+    const items = await this.prismaService.item.findMany({
+      where: { name: { in: uniqueItemNames } }
+    });
+    const itemMap = new Map(items.map(i => [i.name, i.id]));
 
-    console.log(`[SYNC] Ринок успішно оновлено!`);
+    await this.syncListing(listings, itemMap);
+    await this.syncHistoryBackground(listings, itemMap);
+
+    this.loggerService.info(`[SYNC] Синхронізація успішно завершена!`);
+  }
+
+  private async syncHistoryBackground(listings: ParsedListing[], itemMap: Map<string, number>) {
+    this.loggerService.info(`[SYNC] Початок оновлення історії...`);
+    const timeoutThreshold = new Date(Date.now() - this.configService.values.SESSION_TIMEOUT_MINUTES * 60 * 1000);
+    const syncTimestamp = listings[0]?.timestamp || new Date();
+    const CHUNK_SIZE = 4000;
+
+    try {
+      const recentHistory = await this.prismaService.playerStallHistory.findMany({
+        where: { lastSeen: { gte: timeoutThreshold } },
+        select: { id: true, username: true, itemId: true, type: true, price: true, serverId: true }
+      });
+
+      const activeSessionsMap = new Map(
+        recentHistory.map(h => [`${h.username}_${h.itemId}_${h.type}_${h.price}_${h.serverId}`, h.id])
+      );
+
+      const historyCreates: any[] = [];
+      const historyUpdateIds = new Set<number>();
+      const createdSessionsInCurrentSync = new Set<string>();
+
+      for (const l of listings) {
+        const itemId = itemMap.get(l.itemName)!;
+        const sessionKey = `${l.username}_${itemId}_${l.type}_${l.price}_${l.serverId}`;
+        const activeHistoryId = activeSessionsMap.get(sessionKey);
+
+        if (activeHistoryId) {
+          historyUpdateIds.add(activeHistoryId);
+        } else if (!createdSessionsInCurrentSync.has(sessionKey)) {
+          historyCreates.push({
+            username: l.username,
+            itemId: itemId,
+            type: l.type,
+            price: l.price,
+            serverId: l.serverId,
+            firstSeen: l.timestamp,
+            lastSeen: l.timestamp
+          });
+          createdSessionsInCurrentSync.add(sessionKey);
+        }
+      }
+
+      if (historyCreates.length > 0) {
+        this.loggerService.info(`[SYNC] Створення ${historyCreates.length} нових записів в історії...`);
+        for (let i = 0; i < historyCreates.length; i += CHUNK_SIZE) {
+          const chunk = historyCreates.slice(i, i + CHUNK_SIZE);
+          await this.prismaService.playerStallHistory.createMany({ data: chunk, skipDuplicates: true });
+        }
+      }
+
+      if (historyUpdateIds.size > 0) {
+        const idsToUpdate = Array.from(historyUpdateIds);
+        this.loggerService.info(`[SYNC] Оновлення часу для ${idsToUpdate.length} існуючих сесій...`);
+        for (let i = 0; i < idsToUpdate.length; i += CHUNK_SIZE) {
+          const chunkIds = idsToUpdate.slice(i, i + CHUNK_SIZE);
+          await this.prismaService.playerStallHistory.updateMany({
+            where: { id: { in: chunkIds } },
+            data: { lastSeen: syncTimestamp }
+          });
+        }
+      }
+
+      this.loggerService.info(`[SYNC] Історія успішно оновлена!`);
+    } catch (error) {
+      this.loggerService.error(`[SYNC] Помилка оновлення історії:`, error);
+    }
   }
 
   async getMarketAnalytics(itemName: string, serverId: number, deviationPercent: number) {
-    const top3 = await this.prisma.marketListing.findMany({
+    const top3 = await this.prismaService.marketListing.findMany({
       where: {
         item: { name: itemName },
         serverId: serverId,
@@ -121,24 +184,18 @@ export class LavkaService {
       return { message: 'Товар не знайдено на ринку' };
     }
 
-    // 2. Вираховуємо середню ціну з цих 3-х
     const sum = top3.reduce((acc, curr) => acc + curr.price, 0);
     const averagePrice = Math.round(sum / top3.length);
 
-    // 3. Дивимось товари, які відрізняються на n% від середньої ціни (в меншу або більшу сторону)
-    // Наприклад: якщо avg = 100000, а percent = 20%, то межі: 80000 та 120000
     const lowerBound = averagePrice * (1 - deviationPercent / 100);
     const upperBound = averagePrice * (1 + deviationPercent / 100);
 
-    const anomalies = await this.prisma.marketListing.findMany({
+    const anomalies = await this.prismaService.marketListing.findMany({
       where: {
         item: { name: itemName },
         serverId: serverId,
         type: ListingTypes.SELL,
-        OR: [
-          { price: { lt: lowerBound } }, // дешевше норми
-          { price: { gt: upperBound } } // дорожче норми
-        ]
+        OR: [{ price: { lt: lowerBound } }, { price: { gt: upperBound } }]
       },
       orderBy: { price: 'asc' }
     });
@@ -151,8 +208,7 @@ export class LavkaService {
   }
 
   async getProfitableDeals(deviationPercent: number = 20) {
-    // 1. Отримуємо всі товари на продаж з бази
-    const allSells = await this.prisma.marketListing.findMany({
+    const allSells = await this.prismaService.marketListing.findMany({
       where: { type: ListingTypes.SELL },
       include: { item: true }
     });
@@ -160,7 +216,6 @@ export class LavkaService {
     const deals = [];
     const groups = new Map<number, typeof allSells>();
 
-    // 2. Групуємо всі товари ЛИШЕ за предметом (глобальний ринок)
     for (const listing of allSells) {
       if (!groups.has(listing.itemId)) {
         groups.set(listing.itemId, []);
@@ -168,38 +223,33 @@ export class LavkaService {
       groups.get(listing.itemId)!.push(listing);
     }
 
-    // 3. Аналізуємо кожен предмет глобально
     for (const [itemId, items] of groups.entries()) {
-      // Якщо глобально менше 3-х товарів - немає з чим об'єктивно порівнювати
       if (items.length < 3) continue;
 
-      // Нормалізуємо ціни для сортування (якщо сервер 0 -> множимо ціну на 100)
       const normalizedItems = items.map(item => ({
         ...item,
         normalizedPrice: item.serverId === 0 ? item.price * 100 : item.price
       }));
 
-      // Сортуємо від найдешевшого до найдорожчого за НОРМАЛІЗОВАНОЮ ціною
       normalizedItems.sort((a, b) => a.normalizedPrice - b.normalizedPrice);
 
-      // Беремо топ-3 найдешевших ГЛОБАЛЬНО
       const top3 = normalizedItems.slice(0, 3);
       const sum = top3.reduce((acc, curr) => acc + curr.normalizedPrice, 0);
       const avgNormalizedPrice = sum / top3.length;
 
-      // Обчислюємо цільовий поріг (наприклад, -20%)
-      const targetNormalizedPrice = avgNormalizedPrice * (1 - deviationPercent / 100);
+      const thresholdPrice = avgNormalizedPrice * (1 - this.configService.values.MIN_DEVIATION_PERCENT / 100);
 
-      // Збираємо ВСІ товари, які дешевші за цільовий поріг
       for (const item of normalizedItems) {
-        if (item.normalizedPrice <= targetNormalizedPrice) {
+        if (item.normalizedPrice <= thresholdPrice) {
+          const actualDeviation = ((avgNormalizedPrice - item.normalizedPrice) / avgNormalizedPrice) * 100;
+
           deals.push({
-            listing: item, // оригінальний товар (з оригінальною ціною)
+            listing: item,
             normalizedPrice: item.normalizedPrice,
-            avgNormalizedPrice: Math.round(avgNormalizedPrice)
+            avgNormalizedPrice: Math.round(avgNormalizedPrice),
+            deviation: actualDeviation
           });
         } else {
-          // Оскільки масив відсортований, якщо ми дійшли до товару, який дорожче порогу - далі шукати немає сенсу
           break;
         }
       }

@@ -4,13 +4,20 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "generate": "bun --bun prisma generate",
-    "start": "bun src/index"
+    "db:push": "bun --bun prisma db push && bun --bun prisma db seed",
+    "db:migrate": "bun --bun prisma migrate dev && bun --bun prisma db seed",
+    "db:reset": "bun --bun prisma migrate reset --force",
+    "db:generate": "bun --bun prisma generate",
+    "start": "bun src/index.ts",
+    "debug": "bun --inspect src/index.ts",
+    "dev": "bun --watch src/index.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/pg": "^8.20.0",
-    "prisma": "^7.6.0"
+    "prisma": "^7.6.0",
+    "@trivago/prettier-plugin-sort-imports": "^6.0.2",
+    "prettier": "^3.8.1"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -18,20 +25,18 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
-    "@trivago/prettier-plugin-sort-imports": "^6.0.2",
+    "@types/pg-format": "^1.0.5",
     "axios": "1.14.0",
     "dotenv": "^17.3.1",
     "grammy": "^1.41.1",
-    "http-proxy-agent": "^8.0.0",
     "https-proxy-agent": "^8.0.0",
     "node-cron": "^4.2.1",
     "pg": "^8.20.0",
+    "pg-format": "^1.0.4",
     "pino": "^10.3.1",
     "pino-pretty": "^13.1.3",
-    "prettier": "^3.8.1",
     "reflect-metadata": "^0.2.2",
     "tsyringe": "^4.10.0",
-    "undici": "^7.24.6",
     "zod": "^4.3.6"
   }
 }

@@ -27,3 +27,12 @@ export interface ParsedListing {
   lavkaUid: number;
   serverId: number;
 }
+
+export enum SubscriptionType {
+  MARKET_ALERTS = 1, // Сповіщення про вигідні товари
+  STATISTICS = 2     // Підписка на графіки/статистику (на майбутнє)
+}
+
+export interface MarketAlertSettings {
+  deviationPercent: number;
+}
