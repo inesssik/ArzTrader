@@ -6,19 +6,25 @@ import { BotService } from './BotService';
 import { ConfigService } from './ConfigService';
 import { LoggerService } from './LoggerService';
 import { PrismaService } from './PrismaService';
+import { MarketSyncService } from './MarketSyncService';
+import { StatisticsService } from './StatisticsService';
+import { LavkaService } from './LavkaService';
 
 async function bootstrap() {
   container.resolve(ConfigService);
-  const logger = container.resolve(LoggerService);
-
+  container.resolve(LoggerService);
   container.resolve(PrismaService);
-  const arz = container.resolve(ArzApiService);
-  console.log(await arz.getOnlines())
+  container.resolve(ArzApiService);
+  container.resolve(LavkaService);
+
+  const syncService = container.resolve(MarketSyncService);
+  syncService.init();
+
+  const statsService = container.resolve(StatisticsService);
+  statsService.init();
 
   const botService = container.resolve(BotService);
   await botService.init();
-
-  logger.info('All services has been started...');
 }
 
 bootstrap();

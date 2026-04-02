@@ -92,14 +92,14 @@ export class ArzApiService {
     return this.refreshTokenPromise;
   }
 
-  // public async getOnlines() {
-  //   const data = (await this.axiosInstance.get<Lavka[]>('/onlines')).data;
-  //   await
-  // }
+  public async getOnlines() {
+    const res = await this.axiosInstance.get<Lavka[]>('/onlines')
+    return res.data;
+  }
 }
 
 /*
   1. Беремо 3 перші лота вс*100 (якщо нема 3 перші лота будь якого серверу без *100) 100000, 101000, 102000
   2. Вираховуємо середню ціну 102000
-  3. 
+  3. Дивимось товари які n% від середньої ціни
 */

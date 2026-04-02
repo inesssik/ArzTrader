@@ -23,7 +23,7 @@ export class BotService {
     //     name: 'Alice'
     //   }
     // });
-    const user = await this.prismaService.user.findFirst({where: { id: '1' }});
+    const user = await this.prismaService.telegramUser.findFirst({where: { id: '1' }});
     this.tgBot.hears('/start', ctx => ctx.reply(JSON.stringify(user)));
   }
 

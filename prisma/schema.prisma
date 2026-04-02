@@ -1,15 +1,110 @@
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "./generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id   String  @id
-  name String?
+enum MarketListingType {
+  SELL
+  BUY
+}
 
-  @@map("users")
+model TelegramUser {
+  id       String  @id
+  username String?
+
+  @@map("telegram_user")
+}
+
+model Server {
+  id   Int    @id
+  name String
+
+  @@map("server")
+}
+
+model Player {
+  id       Int     @id @default(autoincrement())
+  username String?
+  serverId Int
+
+  @@map("player")
+}
+
+model Item {
+  id       Int             @id @default(autoincrement())
+  name     String          @unique
+  listings MarketListing[] // Связь с живым рынком
+  history  PriceHistory[] // Связь с историей для графиков
+
+  playerStallHistories PlayerStallHistory[]
+}
+
+// --------------------------------------------------
+// ЖИВОЙ РЫНОК (Синхронизируется при каждом парсинге)
+// --------------------------------------------------
+model MarketListing {
+  id        Int               @id @default(autoincrement())
+  itemId    Int
+  item      Item              @relation(fields: [itemId], references: [id])
+  type      MarketListingType
+  price     Float
+  quantity  Int
+  username  String
+  lavkaUid  Int
+  serverId  Int
+  timestamp DateTime
+
+  @@index([itemId, type, price]) // Быстрый поиск топ-3
+  @@index([lavkaUid, serverId]) // Быстрое удаление лавки при обновлении
+  @@map("market_listing")
+}
+
+// --------------------------------------------------
+// ИСТОРИЯ ЦЕН (Записывается раз в час CRON-ом)
+// --------------------------------------------------
+model PriceHistory {
+  id       Int               @id @default(autoincrement())
+  itemId   Int
+  item     Item              @relation(fields: [itemId], references: [id])
+  type     MarketListingType
+  serverId Int
+
+  // Агрегированные данные для мощных графиков
+  minPrice      Float
+  maxPrice      Float
+  avgPrice      Float
+  medianPrice   Float // Защита от спам-цен
+  totalVolume   Int // Суммарное количество товара
+  listingsCount Int // Количество лавок с этим товаром
+
+  timestamp DateTime // Время снятия метрики (ось X на графике)
+
+  @@index([itemId, timestamp]) // Для быстрой отдачи данных на фронтенд/в бота
+  @@map("price_history")
+}
+
+model PlayerStallHistory {
+  id          Int      @id @default(autoincrement())
+  username    String
+  itemId      Int
+  item        Item     @relation(fields: [itemId], references: [id])
+  type        MarketListingType
+  price       Float
+  serverId    Int
+  
+  // Коли ми вперше побачили цей лот і коли востаннє
+  firstSeen   DateTime @default(now())
+  lastSeen    DateTime @default(now())
+
+  // Складений унікальний ключ. 
+  // Якщо цей самий гравець виставить цей самий товар за ТАКОЮ Ж ціною, 
+  // ми не створимо новий запис, а оновимо існуючий.
+  // Якщо він змінить ціну хоч на 1$ - створиться новий запис історії.
+  @@unique([username, itemId, type, price, serverId])
+  
+  @@index([username, serverId]) // Швидкий пошук всієї історії конкретного гравця
 }

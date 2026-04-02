@@ -1,6 +1,6 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { singleton } from 'tsyringe';
-import { PrismaClient } from '../generated/prisma/client';
+import { PrismaClient } from '../prisma/generated/prisma/client';
 import { ConfigService } from './ConfigService';
 
 @singleton()
