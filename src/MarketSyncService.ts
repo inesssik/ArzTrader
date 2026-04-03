@@ -1,11 +1,9 @@
 import cron from 'node-cron';
 import { singleton } from 'tsyringe';
-import fs from 'fs/promises';
 import { ArzApiService } from './ArzApiService';
 import { LavkaService } from './LavkaService';
 import { LoggerService } from './LoggerService';
 import { NotificationService } from './NotificationService';
-import type { Lavka } from './types/types';
 import { parseGlobalMarket } from './utils/marketMapper';
 
 @singleton()

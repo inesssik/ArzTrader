@@ -12,7 +12,7 @@ enum MarketListingType {
   BUY
 }
 
-model TelegramUser {
+model User {
   id               String             @id
   username         String?
   userSubscription UserSubscription[]
@@ -109,7 +109,7 @@ model PlayerStallHistory {
 model UserSubscription {
   id             String       @id @default(uuid())
   userId         String
-  user           TelegramUser @relation(fields: [userId], references: [id])
+  user           User @relation(fields: [userId], references: [id])
   subscriptionId Int
   subscription   Subscription @relation(fields: [subscriptionId], references: [id])
   expiresAt      DateTime

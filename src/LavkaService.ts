@@ -4,6 +4,7 @@ import { ConfigService } from './ConfigService';
 import { LoggerService } from './LoggerService';
 import { PrismaService } from './PrismaService';
 import { ListingTypes, type ParsedListing } from './types/types';
+import type { Prisma } from '../prisma/generated/prisma/client';
 
 @singleton()
 export class LavkaService {
@@ -118,7 +119,7 @@ export class LavkaService {
         recentHistory.map(h => [`${h.username}_${h.itemId}_${h.type}_${h.price}_${h.serverId}`, h.id])
       );
 
-      const historyCreates: any[] = [];
+      const historyCreates: Prisma.PlayerStallHistoryCreateManyInput[] = [];
       const historyUpdateIds = new Set<number>();
       const createdSessionsInCurrentSync = new Set<string>();
 
@@ -169,7 +170,7 @@ export class LavkaService {
     }
   }
 
-  async getMarketAnalytics(itemName: string, serverId: number, deviationPercent: number) {
+  private async getMarketAnalytics(itemName: string, serverId: number, deviationPercent: number) {
     const top3 = await this.prismaService.marketListing.findMany({
       where: {
         item: { name: itemName },
@@ -207,7 +208,7 @@ export class LavkaService {
     };
   }
 
-  async getProfitableDeals(deviationPercent: number = 20) {
+  async getProfitableDeals(deviationPercent: number) {
     const allSells = await this.prismaService.marketListing.findMany({
       where: { type: ListingTypes.SELL },
       include: { item: true }
@@ -237,7 +238,7 @@ export class LavkaService {
       const sum = top3.reduce((acc, curr) => acc + curr.normalizedPrice, 0);
       const avgNormalizedPrice = sum / top3.length;
 
-      const thresholdPrice = avgNormalizedPrice * (1 - this.configService.values.MIN_DEVIATION_PERCENT / 100);
+      const thresholdPrice = avgNormalizedPrice * (1 - deviationPercent / 100);
 
       for (const item of normalizedItems) {
         if (item.normalizedPrice <= thresholdPrice) {
