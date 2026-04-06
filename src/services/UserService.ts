@@ -1,5 +1,5 @@
 import { singleton } from 'tsyringe';
-import { PrismaService } from './PrismaService';
+import { PrismaService } from '../database/PrismaService';
 
 @singleton()
 export class UserService {

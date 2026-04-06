@@ -1,26 +1,30 @@
 import 'dotenv/config.js';
 import 'reflect-metadata';
 import { container } from 'tsyringe';
-import { ArzApiService } from './ArzApiService';
-import { BotService } from './BotService';
-import { ConfigService } from './ConfigService';
-import { LavkaService } from './LavkaService';
-import { LoggerService } from './LoggerService';
-import { MarketSyncService } from './MarketSyncService';
-import { NotificationService } from './NotificationService';
-import { PrismaService } from './PrismaService';
-import { StatisticsService } from './StatisticsService';
+import { ArzApiService } from './api/ArzApiService';
+import { BotService } from './bot/BotService';
+import { ConfigService } from './config/ConfigService';
+import { PrismaService } from './database/PrismaService';
+import { NotificationService } from './services/NotificationService';
+import { StatisticsService } from './services/StatisticsService';
+import { MarketAnalyzerService } from './services/market/MarketAnalyzerService';
+import { MarketOrchestrator } from './services/market/MarketOrchestrator';
+import { MarketSyncService } from './services/market/MarketSyncService';
+import { LoggerService } from './utils/Logger';
+import { MenuController } from './bot/controllers/MenuController';
 
 async function bootstrap() {
   container.resolve(ConfigService);
   container.resolve(LoggerService);
   container.resolve(PrismaService);
   container.resolve(ArzApiService);
-  container.resolve(LavkaService);
   container.resolve(NotificationService);
+  container.resolve(MarketSyncService);
+  container.resolve(MarketAnalyzerService);
+  container.resolve(MenuController);
 
-  const syncService = container.resolve(MarketSyncService);
-  syncService.init();
+  const marketOrchestrator = container.resolve(MarketOrchestrator);
+  marketOrchestrator.init();
 
   const statsService = container.resolve(StatisticsService);
   statsService.init();

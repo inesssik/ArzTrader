@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { singleton } from 'tsyringe';
-import { LoggerService } from './LoggerService';
-import { PrismaService } from './PrismaService';
+import { LoggerService } from '../utils/Logger';
+import { PrismaService } from '../database/PrismaService';
 
 @singleton()
 export class StatisticsService {

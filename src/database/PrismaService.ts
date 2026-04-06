@@ -1,8 +1,8 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import { singleton } from 'tsyringe';
-import { PrismaClient } from '../prisma/generated/prisma/client';
-import { ConfigService } from './ConfigService';
+import { PrismaClient } from '../../prisma/generated/prisma/client';
+import { ConfigService } from '../config/ConfigService';
 
 @singleton()
 export class PrismaService extends PrismaClient {

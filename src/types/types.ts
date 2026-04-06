@@ -17,6 +17,17 @@ export enum ListingTypes {
   BUY = 'BUY'
 }
 
+export interface MarketAlertSettings {
+  deviationPercent: number;
+  servers: number[] | 'ALL';
+}
+
+export interface ProfitableDeal {
+  listing: ParsedListing;
+  baseAvgPrice: number;
+  deviation: number;
+}
+
 export interface ParsedListing {
   itemName: string;
   type: ListingTypes;
@@ -31,8 +42,4 @@ export interface ParsedListing {
 export enum SubscriptionType {
   MARKET_ALERTS = 1, // Сповіщення про вигідні товари
   STATISTICS = 2     // Підписка на графіки/статистику (на майбутнє)
-}
-
-export interface MarketAlertSettings {
-  deviationPercent: number;
 }

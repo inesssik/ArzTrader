@@ -2,22 +2,27 @@ import { singleton } from 'tsyringe';
 import z from 'zod';
 
 const arzApiProxyTransformer = (val: string) => {
-  const parts = val.split(':');
+  const proxies = val.split(',');
 
-  if (parts.length === 4) {
-    const [ip, port, username, password] = parts;
-    return `http://${username}:${password}@${ip}:${port}`;
-  }
+  return proxies.map(proxy => {
+    const parts = proxy.split(':');
 
-  return val;
+    if (parts.length === 4) {
+      const [ip, port, username, password] = parts;
+      return `http://${username}:${password}@${ip}:${port}`;
+    }
+
+    return proxy;
+  });
 };
 
 const configSchema = z.object({
   BOT_TOKEN: z.string(),
   DATABASE_URL: z.string(),
-  ARZ_API_PROXY: z.string().transform(arzApiProxyTransformer),
+  ARZ_API_PROXIES: z.string().transform(arzApiProxyTransformer),
   SESSION_TIMEOUT_MINUTES: z.coerce.number(),
-  MIN_DEVIATION_PERCENT: z.coerce.number()
+  MIN_DEVIATION_PERCENT: z.coerce.number(),
+  VC_PRICE_CURRENCY: z.coerce.number()
 });
 
 @singleton()
@@ -30,5 +35,6 @@ export class ConfigService {
       throw new Error(`Config validation error: ${parsed.error.message}`);
     }
     this.values = parsed.data;
+    console.log(this.values.ARZ_API_PROXIES);
   }
 }

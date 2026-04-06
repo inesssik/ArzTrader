@@ -17,7 +17,7 @@ model User {
   username         String?
   userSubscription UserSubscription[]
 
-  @@map("telegram_user")
+  @@map("user")
 }
 
 model Server {

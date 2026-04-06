@@ -1,6 +1,6 @@
 import { singleton } from 'tsyringe';
-import { PrismaService } from './PrismaService';
-import type { MarketAlertSettings } from './types/types';
+import { PrismaService } from '../database/PrismaService';
+import type { MarketAlertSettings } from '../types/types';
 
 @singleton()
 export class UserSubscriptionService {
@@ -11,7 +11,7 @@ export class UserSubscriptionService {
       where: {
         userId,
         subscriptionId,
-        expiresAt: { gt: new Date() } // Шукаємо тільки активні
+        expiresAt: { gt: new Date() }
       }
     });
   }
@@ -19,7 +19,6 @@ export class UserSubscriptionService {
   public async updateSettings(subscriptionId: string, settings: MarketAlertSettings) {
     return this.prisma.userSubscription.update({
       where: { id: subscriptionId },
-      // Prisma автоматично перетворює об'єкт в JSON
       data: { settings: settings as any }
     });
   }
