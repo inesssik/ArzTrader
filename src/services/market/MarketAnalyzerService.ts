@@ -35,7 +35,7 @@ export class MarketAnalyzerService {
 
       const maxBuyPriceInVC = maxBuyPrice / vcMultiplier;
       // Залишаємо мінімальний поріг вартості
-      if (maxBuyPriceInVC <= 100000) {
+      if (maxBuyPriceInVC <= this.config.values.MIN_MAXBUYPRICE) {
         continue;
       }
 

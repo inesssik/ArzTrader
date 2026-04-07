@@ -22,7 +22,8 @@ const configSchema = z.object({
   ARZ_API_PROXIES: z.string().transform(arzApiProxyTransformer).refine((arr) => arr.length > 0, "Nonempty"),
   SESSION_TIMEOUT_MINUTES: z.coerce.number(),
   MIN_DEVIATION_PERCENT: z.coerce.number(),
-  VC_PRICE_CURRENCY: z.coerce.number()
+  VC_PRICE_CURRENCY: z.coerce.number(),
+  MIN_MAXBUYPRICE: z.coerce.number()
 });
 
 @singleton()
