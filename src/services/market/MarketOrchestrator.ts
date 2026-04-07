@@ -19,26 +19,28 @@ export class MarketOrchestrator {
   ) {}
 
   public init() {
-    cron.schedule('*/10 * * * *', async () => {
-      await this.syncTask();
-    });
+    // cron.schedule('*/10 * * * *', async () => {
+    //   await this.syncTask();
+    // });
     this.syncTask();
   }
 
   private async syncTask() {
-    try {
-      this.logger.info('[MarketSync] Починаємо завантаження ринку...');
-      const rawData = await this.apiService.getOnlines();
+    while (true) {
+      try {
+        this.logger.info('[MarketSync] Починаємо завантаження ринку...');
+        const rawData = await this.apiService.getOnlines();
 
-      const parsedData = parseGlobalMarket(rawData);
-      this.logger.info(`[MarketSync] Отримано ${parsedData.length} лотів. Аналізуємо та оновлюємо БД...`);
+        const parsedData = parseGlobalMarket(rawData);
+        this.logger.info(`[MarketSync] Отримано ${parsedData.length} лотів. Аналізуємо та оновлюємо БД...`);
 
-      const deals = this.marketAnalyzerService.findProfitableDeals(parsedData);
-      await this.notificationService.processAlerts(deals);
+        const deals = this.marketAnalyzerService.findProfitableDeals(parsedData);
+        await this.notificationService.processAlerts(deals);
 
-      await this.marketSyncService.syncFullMarket(parsedData);
-    } catch (error) {
-      this.logger.error('[MarketSync] Помилка синхронізації ринку', error);
+        // await this.marketSyncService.syncFullMarket(parsedData);
+      } catch (error) {
+        this.logger.error('[MarketSync] Помилка синхронізації ринку', error);
+      }
     }
   }
 }

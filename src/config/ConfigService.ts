@@ -19,7 +19,7 @@ const arzApiProxyTransformer = (val: string) => {
 const configSchema = z.object({
   BOT_TOKEN: z.string(),
   DATABASE_URL: z.string(),
-  ARZ_API_PROXIES: z.string().transform(arzApiProxyTransformer),
+  ARZ_API_PROXIES: z.string().transform(arzApiProxyTransformer).refine((arr) => arr.length > 0, "Nonempty"),
   SESSION_TIMEOUT_MINUTES: z.coerce.number(),
   MIN_DEVIATION_PERCENT: z.coerce.number(),
   VC_PRICE_CURRENCY: z.coerce.number()
