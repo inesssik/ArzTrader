@@ -12,13 +12,23 @@ RUN apt-get update -y && \
     apt-get install -y openssl && \
     rm -rf /var/lib/apt/lists/*
 
+# Pass a dummy DATABASE_URL so prisma.config.ts evaluates successfully
+ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+RUN bun run db:generate
+
+
 FROM oven/bun:1-slim
 
 WORKDIR /app
 
+# Prisma requires OpenSSL at runtime, so it must be installed in the final image too
+RUN apt-get update -y && \
+    apt-get install -y openssl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy everything, including the generated Prisma client from the builder stage
 COPY --from=builder /app /app
 
 ENV NODE_ENV=production
 
-RUN bun run db:generate
-CMD ["bun", "run", "start"]
+CMD ["sh", "-c", "bun run db:push && bun run start"]
