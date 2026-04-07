@@ -24,7 +24,7 @@ export class ArzApiService {
     private readonly prismaService: PrismaService
   ) {
     this.axiosInstance = axios.create({
-      baseURL: 'https://reserve-api.arz.market/api',
+      baseURL: 'https://api.arz.market/api',
       httpAgent: new http.Agent({ timeout: 10000 }),
       httpsAgent: new https.Agent({ timeout: 10000 }),
       // httpsAgent: new HttpsProxyAgent(this.configService.values.ARZ_API_PROXIES[0]!, { timeout: 10000 }),
