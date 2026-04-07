@@ -12,8 +12,6 @@ RUN apt-get update -y && \
     apt-get install -y openssl && \
     rm -rf /var/lib/apt/lists/*
 
-RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" bun --bun prisma generate
-
 FROM oven/bun:1-slim
 
 WORKDIR /app
@@ -22,4 +20,5 @@ COPY --from=builder /app /app
 
 ENV NODE_ENV=production
 
+RUN bun run db:generate
 CMD ["bun", "run", "start"]
