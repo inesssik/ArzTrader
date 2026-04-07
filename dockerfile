@@ -12,7 +12,7 @@ RUN apt-get update -y && \
     apt-get install -y openssl && \
     rm -rf /var/lib/apt/lists/*
 
-RUN bun --bun prisma generate
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" bun --bun prisma generate
 
 FROM oven/bun:1-slim
 
