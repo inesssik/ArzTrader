@@ -5,18 +5,19 @@ import { LoggerService } from '../../utils/Logger';
 import { parseGlobalMarket } from '../../utils/marketMapper';
 import { MarketAnalyzerService } from './MarketAnalyzerService';
 import { MarketSyncService } from './MarketSyncService';
+import type { ConfigService } from '../../config/ConfigService';
 
 @singleton()
 export class MarketOrchestrator {
-  // Звичайні сервери (без VC)
-  private readonly REGULAR_SERVERS = Array.from({ length: 30 }, (_, i) => i + 1);
-
+  private readonly REGULAR_SERVERS = Array.from({ length: 32 }, (_, i) => i + 1);
+  
   constructor(
     private readonly apiService: ArzApiService,
     private readonly marketSyncService: MarketSyncService,
     private readonly logger: LoggerService,
     private readonly notificationService: NotificationService,
-    private readonly marketAnalyzerService: MarketAnalyzerService
+    private readonly marketAnalyzerService: MarketAnalyzerService,
+    private readonly configService: ConfigService
   ) {}
 
   public init() {
