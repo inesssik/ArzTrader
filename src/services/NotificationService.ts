@@ -1,8 +1,8 @@
 import { singleton } from 'tsyringe';
 import { BotService } from '../bot/BotService';
-import { LoggerService } from '../utils/Logger';
 import { PrismaService } from '../database/PrismaService';
-import { type MarketAlertSettings, SubscriptionType, type ProfitableDeal } from '../types/types';
+import { type MarketAlertSettings, type ProfitableDeal, SubscriptionType } from '../types/types';
+import { LoggerService } from '../utils/Logger';
 
 @singleton()
 export class NotificationService {
@@ -31,12 +31,15 @@ export class NotificationService {
 
       for (const deal of deals) {
         const { listing, deviation, baseAvgPrice } = deal;
-        
+
         const dealKey = `${listing.username}_${listing.itemName}_${listing.price}_${listing.serverId}`;
-        
+
         if (!this.notifiedDeals.has(dealKey)) {
           for (const sub of activeSubscriptions) {
-            const settings = (sub.settings as unknown as MarketAlertSettings) || { deviationPercent: 20, servers: 'ALL' };
+            const settings = (sub.settings as unknown as MarketAlertSettings) || {
+              deviationPercent: 20,
+              servers: 'ALL'
+            };
 
             const isServerMatch = settings.servers === 'ALL' || settings.servers.includes(listing.serverId);
             const isDeviationMatch = deviation >= settings.deviationPercent;
@@ -44,7 +47,7 @@ export class NotificationService {
             if (isServerMatch && isDeviationMatch) {
               const message =
                 `📦 <b>${listing.itemName}</b>\n` +
-                `💰 Цена: ${listing.price.toLocaleString()}$ <i>(${deviation.toFixed(1)}%)</i>\n` +
+                `💰 Цена: ${listing.serverId === 0 ? (listing.price * 100).toLocaleString() : listing.price.toLocaleString()}$ <i>(${deviation.toFixed(1)}%)</i>\n` +
                 `📈 Скуп VC: ${Math.round(baseAvgPrice).toLocaleString()}$\n` +
                 `🎁 Кол-во: ${listing.quantity}\n` +
                 `🏬 Лавка: ${listing.lavkaUid}\n` +
@@ -52,7 +55,7 @@ export class NotificationService {
                 `🖥 Сервер: ${listing.serverId}`;
 
               this.botService
-                .sendMessage(sub.userId, message, { parse_mode: "HTML" })
+                .sendMessage(sub.userId, message, { parse_mode: 'HTML' })
                 .catch(err => this.logger.debug(`Не вдалося відправити юзеру ${sub.userId}: ${err.message}`));
             }
           }
@@ -68,7 +71,7 @@ export class NotificationService {
   public cleanStaleDeals(timeoutMs: number = 10 * 60 * 1000) {
     const now = Date.now();
     let deletedCount = 0;
-    
+
     for (const [key, lastSeen] of this.notifiedDeals.entries()) {
       if (now - lastSeen > timeoutMs) {
         this.notifiedDeals.delete(key);
@@ -77,7 +80,7 @@ export class NotificationService {
     }
 
     if (deletedCount > 0) {
-       this.logger.info(`[NotificationService] Очищено ${deletedCount} неактивних угод з пам'яті.`);
+      this.logger.info(`[NotificationService] Очищено ${deletedCount} неактивних угод з пам'яті.`);
     }
   }
 }
