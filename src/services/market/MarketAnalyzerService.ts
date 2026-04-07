@@ -4,61 +4,65 @@ import { ListingTypes, type ParsedListing, type ProfitableDeal } from '../../typ
 
 @singleton()
 export class MarketAnalyzerService {
+  // Кеш максимальних цін скупки з Vice City (Server 0)
+  private vcMaxBuyPrices = new Map<string, number>();
+
   constructor(private readonly config: ConfigService) {}
 
+  // 1. Спочатку оновлюємо ціни скупки з VC
+  public updateVCPrices(vcListings: ParsedListing[]): void {
+    this.vcMaxBuyPrices.clear();
+    const vcMultiplier = this.config.values.VC_PRICE_CURRENCY;
+
+    const itemGroups = new Map<string, number[]>();
+
+    // Групуємо тільки скупку (BUY)
+    for (const listing of vcListings) {
+      if (listing.type === ListingTypes.BUY) {
+        if (!itemGroups.has(listing.itemName)) {
+          itemGroups.set(listing.itemName, []);
+        }
+        itemGroups.get(listing.itemName)!.push(listing.price * vcMultiplier);
+      }
+    }
+
+    // Знаходимо і зберігаємо максимум для кожного товару
+    for (const [itemName, prices] of itemGroups.entries()) {
+      const maxBuyPrice = Math.max(...prices);
+      const maxBuyPriceInVC = maxBuyPrice / vcMultiplier;
+
+      if (maxBuyPriceInVC > this.config.values.MIN_MAXBUYPRICE) {
+        this.vcMaxBuyPrices.set(itemName, maxBuyPrice);
+      }
+    }
+  }
+
+  // 2. Шукаємо профіт для конкретного сервера (працює миттєво)
   public findProfitableDeals(listings: ParsedListing[]): ProfitableDeal[] {
     const deals: ProfitableDeal[] = [];
     const vcMultiplier = this.config.values.VC_PRICE_CURRENCY;
 
-    // 1. Групуємо ВСІ лоти (BUY та SELL) по назві товару
-    const itemGroups = new Map<string, ParsedListing[]>();
-    for (const listing of listings) {
-      if (!itemGroups.has(listing.itemName)) {
-        itemGroups.set(listing.itemName, []);
-      }
-      itemGroups.get(listing.itemName)!.push(listing);
-    }
+    // Шукаємо тільки лоти на ПРОДАЖ
+    const sellListings = listings.filter(l => l.type === ListingTypes.SELL);
 
-    // 2. Аналізуємо кожну групу товарів
-    for (const [itemName, groupListings] of itemGroups.entries()) {
-      // Фільтруємо лоти на СКУПКУ (BUY) на 0 сервері (VC) і одразу отримуємо їх ціни у SA-доларах
-      const vcBuyPrices = groupListings
-        .filter(l => l.serverId === 0 && l.type === ListingTypes.BUY)
-        .map(l => l.price * vcMultiplier);
+    for (const listing of sellListings) {
+      // Беремо макс. ціну скупки з кешу VC
+      const maxBuyPrice = this.vcMaxBuyPrices.get(listing.itemName);
 
-      if (vcBuyPrices.length === 0) continue; // На VC немає скупки цього товару, пропускаємо
+      if (!maxBuyPrice) continue; // Немає скупки на VC для цього товару
 
-      // 3. Шукаємо МАКСИМАЛЬНУ ціну скупки
-      const maxBuyPrice = Math.max(...vcBuyPrices);
+      const currentListingStandardPrice = listing.serverId === 0 ? listing.price * vcMultiplier : listing.price;
 
-      if (maxBuyPrice <= 0) continue;
+      if (currentListingStandardPrice >= maxBuyPrice) continue;
 
-      const maxBuyPriceInVC = maxBuyPrice / vcMultiplier;
-      // Залишаємо мінімальний поріг вартості
-      if (maxBuyPriceInVC <= this.config.values.MIN_MAXBUYPRICE) {
-        continue;
-      }
+      const deviation = ((maxBuyPrice - currentListingStandardPrice) / maxBuyPrice) * 100;
 
-      // 4. Шукаємо вигідні лоти на ПРОДАЖ (SELL) по ВСІМ серверам
-      const sellListings = groupListings.filter(l => l.type === ListingTypes.SELL);
-
-      for (const listing of sellListings) {
-        // Приводимо ціну поточного лота до звичайної валюти
-        const currentListingStandardPrice = listing.serverId === 0 ? listing.price * vcMultiplier : listing.price;
-
-        // Якщо ціна продажу більша або дорівнює максимальній ціні скупки — це невигідно
-        if (currentListingStandardPrice >= maxBuyPrice) continue;
-
-        // Рахуємо відсоток відхилення (наскільки товар дешевший за макс. скупку)
-        const deviation = ((maxBuyPrice - currentListingStandardPrice) / maxBuyPrice) * 100;
-
-        if (deviation >= this.config.values.MIN_DEVIATION_PERCENT) {
-          deals.push({
-            listing,
-            baseAvgPrice: maxBuyPrice, // Залишив стару назву поля (baseAvgPrice) для сумісності з інтерфейсом
-            deviation
-          });
-        }
+      if (deviation >= this.config.values.MIN_DEVIATION_PERCENT) {
+        deals.push({
+          listing,
+          baseAvgPrice: maxBuyPrice,
+          deviation
+        });
       }
     }
 

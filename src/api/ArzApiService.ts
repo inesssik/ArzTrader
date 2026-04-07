@@ -24,14 +24,14 @@ export class ArzApiService {
     private readonly prismaService: PrismaService
   ) {
     this.axiosInstance = axios.create({
-      baseURL: 'https://online.arz-mcr.ru/api/lavkas',
+      baseURL: 'https://reserve-api.arz.market/api',
       httpAgent: new http.Agent({ timeout: 10000 }),
       httpsAgent: new https.Agent({ timeout: 10000 }),
       // httpsAgent: new HttpsProxyAgent(this.configService.values.ARZ_API_PROXIES[0]!, { timeout: 10000 }),
       timeout: 10000
     });
 
-    this.initInterceptors();
+    // this.initInterceptors();
   }
 
   private initInterceptors(): void {
@@ -97,8 +97,8 @@ export class ArzApiService {
     return this.refreshTokenPromise;
   }
 
-  public async getOnlines() {
-    const res = await this.axiosInstance.get<Lavka[]>('/onlines', {
+  public async getOnlines(serverId: number) {
+    const res = await this.axiosInstance.get<Lavka[]>(`/getSelectedMarketplace/${serverId}`, {
       signal: AbortSignal.timeout(15000)
     });
     return res.data;
