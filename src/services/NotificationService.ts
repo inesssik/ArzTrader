@@ -31,13 +31,13 @@ export class NotificationService {
 
       for (const deal of deals) {
         const { listing, deviation, baseAvgPrice } = deal;
-        const dealKey = `deal:${listing.username}_${listing.itemName}_${listing.price}_${listing.serverId}`;
+        const dealKey = `deal:${listing.username}_${listing.itemId}_${listing.price}_${listing.serverId}`;
         const isNewDeal = await this.redis.setIfNotExists(dealKey, this.config.values.DEAL_TTL_SECONDS);
 
         if (isNewDeal) {
           for (const sub of activeSubscriptions) {
             const settings = (sub.settings as unknown as MarketAlertSettings) || {
-              deviationPercent: 20,
+              deviationPercent: 40,
               servers: 'ALL'
             };
 
@@ -45,7 +45,7 @@ export class NotificationService {
             const isDeviationMatch = deviation >= settings.deviationPercent;
 
             if (isServerMatch && isDeviationMatch) {
-              const baseAvgPriceParsed = Math.round(listing.serverId === 0 ? baseAvgPrice / 100 : baseAvgPrice);
+              const baseAvgPriceParsed = Math.round(listing.serverId === 0 ? baseAvgPrice / this.config.values.VC_PRICE_CURRENCY : baseAvgPrice);
 
               const message =
                 `📦 <b>${listing.itemName}</b>\n` +
