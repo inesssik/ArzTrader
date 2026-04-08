@@ -20,11 +20,15 @@ const configSchema = z.object({
   BOT_TOKEN: z.string(),
   DATABASE_URL: z.string(),
   REDIS_URL: z.string(),
-  ARZ_API_PROXIES: z.string().transform(arzApiProxyTransformer).refine((arr) => arr.length > 0, "Nonempty"),
+  ARZ_API_PROXIES: z
+    .string()
+    .transform(arzApiProxyTransformer)
+    .refine(arr => arr.length > 0, 'Nonempty'),
   SESSION_TIMEOUT_MINUTES: z.coerce.number(),
   MIN_DEVIATION_PERCENT: z.coerce.number(),
   VC_PRICE_CURRENCY: z.coerce.number(),
-  MIN_MAXBUYPRICE: z.coerce.number()
+  MIN_MAXBUYPRICE: z.coerce.number(),
+  DEAL_TTL_SECONDS: z.coerce.number()
 });
 
 @singleton()

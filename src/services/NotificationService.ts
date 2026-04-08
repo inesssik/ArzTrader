@@ -4,16 +4,16 @@ import { PrismaService } from '../database/PrismaService';
 import { RedisService } from '../database/RedisService';
 import { type MarketAlertSettings, type ProfitableDeal, SubscriptionType } from '../types/types';
 import { LoggerService } from '../utils/Logger';
+import { ConfigService } from '../config/ConfigService';
 
 @singleton()
 export class NotificationService {
-  private readonly DEAL_TTL_SECONDS = 10 * 60;
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly botService: BotService,
     private readonly logger: LoggerService,
-    private readonly redisService: RedisService
+    private readonly redis: RedisService,
+    private readonly config: ConfigService
   ) {}
 
   public async processAlerts(deals: ProfitableDeal[]) {
@@ -32,7 +32,7 @@ export class NotificationService {
       for (const deal of deals) {
         const { listing, deviation, baseAvgPrice } = deal;
         const dealKey = `deal:${listing.username}_${listing.itemName}_${listing.price}_${listing.serverId}`;
-        const isNewDeal = await this.redisService.setIfNotExists(dealKey, this.DEAL_TTL_SECONDS);
+        const isNewDeal = await this.redis.setIfNotExists(dealKey, this.config.values.DEAL_TTL_SECONDS);
 
         if (isNewDeal) {
           for (const sub of activeSubscriptions) {
