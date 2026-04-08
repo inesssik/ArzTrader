@@ -28,7 +28,8 @@ const configSchema = z.object({
   MIN_DEVIATION_PERCENT: z.coerce.number(),
   VC_PRICE_CURRENCY: z.coerce.number(),
   MIN_MAXBUYPRICE: z.coerce.number(),
-  DEAL_TTL_SECONDS: z.coerce.number()
+  DEAL_TTL_SECONDS: z.coerce.number(),
+  ARZ_MARKET_API_TIMEOUT_MS: z.coerce.number()
 });
 
 @singleton()

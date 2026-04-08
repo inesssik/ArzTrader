@@ -19,16 +19,15 @@ export class ArzApiService {
   private refreshTokenPromise: Promise<void> | null = null;
 
   constructor(
-    private readonly configService: ConfigService,
-    private readonly loggerService: LoggerService,
-    private readonly prismaService: PrismaService
+    private readonly config: ConfigService,
+    private readonly logger: LoggerService,
+    private readonly prisma: PrismaService
   ) {
     this.axiosInstance = axios.create({
       baseURL: 'https://api.arz.market/api',
-      httpAgent: new http.Agent({ timeout: 10000 }),
-      httpsAgent: new https.Agent({ timeout: 10000 }),
-      // httpsAgent: new HttpsProxyAgent(this.configService.values.ARZ_API_PROXIES[0]!, { timeout: 10000 }),
-      timeout: 10000
+      httpAgent: new http.Agent({ timeout: this.config.values.ARZ_MARKET_API_TIMEOUT_MS }),
+      httpsAgent: new https.Agent({ timeout: this.config.values.ARZ_MARKET_API_TIMEOUT_MS }),
+      timeout: this.config.values.ARZ_MARKET_API_TIMEOUT_MS
     });
 
     // this.initInterceptors();
@@ -82,7 +81,7 @@ export class ArzApiService {
 
     this.refreshTokenPromise = (async () => {
       try {
-        this.loggerService.info('Obtaining token');
+        this.logger.info('Obtaining token');
         const res = await this.axiosInstance.get<{ ok: boolean; token: string }>('/token');
         const token = res.data?.token;
 
@@ -99,7 +98,7 @@ export class ArzApiService {
 
   public async getOnlines(serverId: number) {
     const res = await this.axiosInstance.get<Lavka[]>(`/getSelectedMarketplace/${serverId}`, {
-      signal: AbortSignal.timeout(15000)
+      signal: AbortSignal.timeout(this.config.values.ARZ_MARKET_API_TIMEOUT_MS)
     });
     return res.data;
   }
