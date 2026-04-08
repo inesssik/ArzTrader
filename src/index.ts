@@ -12,6 +12,7 @@ import { MarketOrchestrator } from './services/market/MarketOrchestrator';
 import { MarketSyncService } from './services/market/MarketSyncService';
 import { LoggerService } from './utils/Logger';
 import { MenuController } from './bot/controllers/MenuController';
+import { RedisService } from './database/RedisService';
 
 async function bootstrap() {
   container.resolve(ConfigService);
@@ -22,6 +23,9 @@ async function bootstrap() {
   container.resolve(MarketSyncService);
   container.resolve(MarketAnalyzerService);
   container.resolve(MenuController);
+
+  const redis = container.resolve(RedisService);
+  redis.init();
 
   const marketOrchestrator = container.resolve(MarketOrchestrator);
   marketOrchestrator.init();
