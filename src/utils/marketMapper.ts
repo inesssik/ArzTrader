@@ -4,8 +4,8 @@ import fs from 'fs/promises';
 const items = JSON.parse(await fs.readFile('./src/data/items.json', { encoding: 'utf-8' })) as Record<string, string>;
 
 function resolveItemInfo(rawItem: string | number): { itemId: string; itemName: string } {
-  const rawItemId = String(rawItem); 
-  
+  const rawItemId = String(rawItem);
+
   const braceIndex = rawItemId.indexOf('(');
 
   if (braceIndex === -1) {
@@ -16,11 +16,11 @@ function resolveItemInfo(rawItem: string | number): { itemId: string; itemName: 
   }
 
   const baseId = rawItemId.slice(0, braceIndex);
-  const modifier = rawItemId.slice(braceIndex); 
+  const modifier = rawItemId.slice(braceIndex);
   const baseName = items[baseId] ?? 'Undefined';
 
   return {
-    itemId: rawItemId, 
+    itemId: rawItemId,
     itemName: `${baseName} ${modifier}`
   };
 }

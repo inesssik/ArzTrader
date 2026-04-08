@@ -19,7 +19,7 @@ export class StatisticsService {
   private async captureSnapshot() {
     try {
       this.logger.info('[Stats] Збираємо зліпок ринку для графіків...');
-      
+
       const activeItems = await this.prisma.marketListing.groupBy({
         by: ['itemId', 'type', 'serverId'],
         _min: { price: true },
@@ -31,7 +31,7 @@ export class StatisticsService {
 
       if (activeItems.length === 0) return;
 
-      // У спрощеному варіанті використовуємо середню ціну (avg), 
+      // У спрощеному варіанті використовуємо середню ціну (avg),
       // якщо розрахунок медіани буде вантажити БД.
       const historyData = activeItems.map(stats => ({
         itemId: stats.itemId,

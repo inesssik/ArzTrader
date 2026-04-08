@@ -9,7 +9,7 @@ export class UserService {
     return this.prisma.user.upsert({
       where: { id: userId },
       update: { username: username || null },
-      create: { id: userId, username: username || null },
+      create: { id: userId, username: username || null }
     });
   }
 }
