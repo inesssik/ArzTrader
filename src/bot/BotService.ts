@@ -32,6 +32,8 @@ export class BotService {
     this.menuController.register(this.tgBot);
     this.adminController.register(this.tgBot);
 
+    this.tgBot.api.setMyCommands([{ command: 'start', description: 'Головне меню' }]);
+
     // Fallback для неизвестных команд
     this.tgBot.on('message', async ctx => {
       await ctx.reply('🤔 Я не понимаю эту команду. Введите /start.');
