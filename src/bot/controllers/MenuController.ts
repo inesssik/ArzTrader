@@ -391,18 +391,20 @@ export class MenuController {
     const settings = activeSub.settings as unknown as MarketAlertSettings;
     const serverConfig = settings.serverConfigs?.[serverId] || {
       deviationPercent: settings.deviationPercent,
-      useGrid: false
+      useGrid: settings.useGrid,
+      grids: settings.grids
     };
 
     let text = `🖥 *Настройки для: [${serverId}] ${serversArr[serverId]}*\n\n`;
     const keyboard = new InlineKeyboard();
 
     if (serverConfig.useGrid) {
-      text += `Режим: 🟩 *СЕТКА ПРОЦЕНТОВ (Индив.)*\n\nТекущая сетка:\n\`\`\`text\n${this.renderGridText(serverConfig.grids)}\n\`\`\``;
+      const gridText = serverConfig.grids ? this.renderGridText(serverConfig.grids) : 'Сетка не задана';
+      text += `Режим: 🟩 *СЕТКА ПРОЦЕНТОВ*\n\nТекущая сетка:\n\`\`\`text\n${gridText}\n\`\`\``;
       keyboard.text('🔄 Переключить на ЕДИНЫЙ ПРОЦЕНТ', `dev_srv_toggle_grid_${serverId}`).row();
       keyboard.text('📝 Редактировать СЕТКУ', `dev_srv_edit_grid_${serverId}`).row();
     } else {
-      text += `Режим: 🟩 *ЕДИНЫЙ ПРОЦЕНТ (Индив.)*\nВыгода для этого сервера: *${serverConfig.deviationPercent}%*\n`;
+      text += `Режим: 🟩 *ЕДИНЫЙ ПРОЦЕНТ*\nВыгода для этого сервера: *${serverConfig.deviationPercent}%*\n`;
       keyboard.text('➖ (-5%)', `dev_srv_${serverId}_minus`).text('➕ (+5%)', `dev_srv_${serverId}_plus`).row();
       keyboard.text('🔄 Переключить на СЕТКУ ПРОЦЕНТОВ', `dev_srv_toggle_grid_${serverId}`).row();
     }
@@ -420,7 +422,11 @@ export class MenuController {
 
     const settings = activeSub.settings as unknown as MarketAlertSettings;
     const serverConfigs = settings.serverConfigs || {};
-    const config = serverConfigs[serverId] || { deviationPercent: settings.deviationPercent, useGrid: false };
+    const config = serverConfigs[serverId] || {
+      deviationPercent: settings.deviationPercent,
+      useGrid: settings.useGrid,
+      grids: settings.grids
+    };
 
     let newDeviation = Math.min(Math.max((config.deviationPercent || 20) + (action === 'plus' ? 5 : -5), 5), 99);
     serverConfigs[serverId] = { ...config, deviationPercent: newDeviation };
@@ -438,7 +444,11 @@ export class MenuController {
 
     const settings = activeSub.settings as unknown as MarketAlertSettings;
     const serverConfigs = settings.serverConfigs || {};
-    const config = serverConfigs[serverId] || { deviationPercent: settings.deviationPercent, useGrid: false };
+    const config = serverConfigs[serverId] || {
+      deviationPercent: settings.deviationPercent,
+      useGrid: settings.useGrid,
+      grids: settings.grids
+    };
 
     serverConfigs[serverId] = { ...config, useGrid: !config.useGrid };
     await this.userSubscriptionService.updateSettings(activeSub.id, { ...settings, serverConfigs });
