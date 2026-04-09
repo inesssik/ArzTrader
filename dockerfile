@@ -21,11 +21,6 @@ FROM oven/bun:1-slim
 
 WORKDIR /app
 
-# Prisma requires OpenSSL at runtime, so it must be installed in the final image too
-RUN apt-get update -y && \
-    apt-get install -y openssl && \
-    rm -rf /var/lib/apt/lists/*
-
 # Copy everything, including the generated Prisma client from the builder stage
 COPY --from=builder /app /app
 
