@@ -29,10 +29,21 @@ export class UserSubscriptionService {
     hours: number,
     servers: number[] | 'ALL'
   ) {
-    const existing = await this.getActiveSubscription(userId, subscriptionId);
+    // 1. Ищем ЛЮБУЮ запись подписки (активную или просроченную)
+    const existing = await this.prisma.userSubscription.findFirst({
+      where: {
+        userId,
+        subscriptionId
+      }
+    });
 
     if (existing) {
-      const newExpiresAt = new Date(existing.expiresAt.getTime() + hours * 60 * 60 * 1000);
+      // 2. Если подписка просрочена, новое время считаем от "сейчас".
+      // Если еще активна, добавляем часы к остатку времени.
+      const now = new Date();
+      const isExpired = existing.expiresAt < now;
+      const baseTime = isExpired ? now.getTime() : existing.expiresAt.getTime();
+      const newExpiresAt = new Date(baseTime + hours * 60 * 60 * 1000);
 
       const currentSettings = (existing.settings as unknown as MarketAlertSettings) || {
         deviationPercent: 40,
@@ -70,6 +81,7 @@ export class UserSubscriptionService {
         }
       });
     } else {
+      // 4. Создаем новую запись, только если пользователь берет её ВПЕРВЫЕ
       const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000);
 
       return this.prisma.userSubscription.create({
