@@ -4,19 +4,19 @@ import { ListingTypes, type ParsedListing, type ProfitableDeal } from '../../typ
 
 @singleton()
 export class MarketAnalyzerService {
-  // Кеш максимальних цін скупки з Vice City (Server 0)
+  // Кэш максимальных цен скупки с Vice City (Server 0)
   private vcMaxBuyPrices = new Map<string, number>();
 
   constructor(private readonly config: ConfigService) {}
 
-  // 1. Спочатку оновлюємо ціни скупки з VC
+  // 1. Сначала обновляем цены скупки с VC
   public updateVCPrices(vcListings: ParsedListing[]): void {
     this.vcMaxBuyPrices.clear();
     const vcMultiplier = this.config.values.VC_PRICE_CURRENCY;
 
     const itemGroups = new Map<string, number[]>();
 
-    // Групуємо тільки скупку (BUY)
+    // Группируем только скупку (BUY)
     for (const listing of vcListings) {
       if (listing.type === ListingTypes.BUY) {
         if (!itemGroups.has(listing.itemName)) {
@@ -26,7 +26,7 @@ export class MarketAnalyzerService {
       }
     }
 
-    // Знаходимо і зберігаємо максимум для кожного товару
+    // Находим и сохраняем максимум для каждого товара
     for (const [itemName, prices] of itemGroups.entries()) {
       const maxBuyPrice = Math.max(...prices);
       const maxBuyPriceInVC = maxBuyPrice / vcMultiplier;
@@ -37,19 +37,19 @@ export class MarketAnalyzerService {
     }
   }
 
-  // 2. Шукаємо профіт для конкретного сервера (працює миттєво)
+  // 2. Ищем профит для конкретного сервера (работает мгновенно)
   public findProfitableDeals(listings: ParsedListing[]): ProfitableDeal[] {
     const deals: ProfitableDeal[] = [];
     const vcMultiplier = this.config.values.VC_PRICE_CURRENCY;
 
-    // Шукаємо тільки лоти на ПРОДАЖ
+    // Ищем только лоты на ПРОДАЖУ
     const sellListings = listings.filter(l => l.type === ListingTypes.SELL);
 
     for (const listing of sellListings) {
-      // Беремо макс. ціну скупки з кешу VC
+      // Берем макс. цену скупки из кэша VC
       const maxBuyPrice = this.vcMaxBuyPrices.get(listing.itemName);
 
-      if (!maxBuyPrice) continue; // Немає скупки на VC для цього товару
+      if (!maxBuyPrice) continue; // Нет скупки на VC для этого товара
 
       const currentListingStandardPrice = listing.serverId === 0 ? listing.price * vcMultiplier : listing.price;
 

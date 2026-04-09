@@ -18,7 +18,7 @@ export class StatisticsService {
 
   private async captureSnapshot() {
     try {
-      this.logger.info('[Stats] Збираємо зліпок ринку для графіків...');
+      this.logger.info('[Stats] Собираем слепок рынка для графиков...');
 
       const activeItems = await this.prisma.marketListing.groupBy({
         by: ['itemId', 'type', 'serverId'],
@@ -31,8 +31,8 @@ export class StatisticsService {
 
       if (activeItems.length === 0) return;
 
-      // У спрощеному варіанті використовуємо середню ціну (avg),
-      // якщо розрахунок медіани буде вантажити БД.
+      // В упрощенном варианте используем среднюю цену (avg),
+      // если расчет медианы будет грузить БД.
       const historyData = activeItems.map(stats => ({
         itemId: stats.itemId,
         type: stats.type,
@@ -40,16 +40,16 @@ export class StatisticsService {
         minPrice: stats._min.price ?? 0,
         maxPrice: stats._max.price ?? 0,
         avgPrice: stats._avg.price ?? 0,
-        medianPrice: stats._avg.price ?? 0, // Тимчасово прирівнюємо до avg
+        medianPrice: stats._avg.price ?? 0, // Временно приравниваем к avg
         totalVolume: stats._sum.quantity ?? 0,
         listingsCount: stats._count.id,
         timestamp: new Date()
       }));
 
       await this.prisma.priceHistory.createMany({ data: historyData });
-      this.logger.info('[Stats] Зліпок успішно збережено!');
+      this.logger.info('[Stats] Слепок успешно сохранен!');
     } catch (error) {
-      this.logger.error('[Stats] Помилка збору статистики', error);
+      this.logger.error('[Stats] Ошибка сбора статистики', error);
     }
   }
 }

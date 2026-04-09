@@ -69,13 +69,13 @@ export class NotificationService {
 
               this.botService
                 .sendMessage(sub.userId, message, { parse_mode: 'HTML' })
-                .catch(err => this.logger.debug(`Не вдалося відправити юзеру ${sub.userId}: ${err.message}`));
+                .catch(err => this.logger.debug(`Не удалось отправить пользователю ${sub.userId}: ${err.message}`));
             }
           }
         }
       }
     } catch (error) {
-      this.logger.error('[NotificationService] Помилка обробки сповіщень', error);
+      this.logger.error('[NotificationService] Ошибка обработки уведомлений', error);
     }
   }
 }

@@ -28,7 +28,7 @@ export class AdminController {
 
     const _match = ctx.message?.text?.match(/^\/give_sub\s+(\d+)\s+(\d+)\s+(.+)$/);
     if (!_match) {
-      await ctx.reply('❌ Формат: /give_sub <user_id> <hours> <servers (через кому або ALL)>');
+      await ctx.reply('❌ Формат: /give_sub <user_id> <hours> <servers (через запятую или ALL)>');
       return;
     }
 
@@ -39,7 +39,7 @@ export class AdminController {
     try {
       await this.userService.ensureUserExists(targetUserId);
     } catch (err: any) {
-      await ctx.reply(`❌ Помилка БД при створенні юзера: ${err.message}`);
+      await ctx.reply(`❌ Ошибка БД при создании пользователя: ${err.message}`);
       return;
     }
 
@@ -49,12 +49,12 @@ export class AdminController {
         servers = serversStr.split(',').map(s => {
           const id = parseInt(s.trim(), 10);
           if (isNaN(id) || id < 0 || id >= serversArr.length) {
-            throw new Error(`Невалідний сервер ID: ${s}`);
+            throw new Error(`Невалидный сервер ID: ${s}`);
           }
           return id;
         });
       } catch (err: any) {
-        await ctx.reply(`❌ Помилка парсингу серверів: ${err.message}`);
+        await ctx.reply(`❌ Ошибка парсинга серверов: ${err.message}`);
         return;
       }
     }
@@ -67,10 +67,10 @@ export class AdminController {
         servers
       );
 
-      await ctx.reply(`✅ Підписка оновлена для ${targetUserId} на ${hours} годин. Сервери: ${serversStr}`);
+      await ctx.reply(`✅ Подписка обновлена для ${targetUserId} на ${hours} часов. Серверы: ${serversStr}`);
     } catch (err: any) {
       await ctx.reply(
-        `❌ Помилка БД при видачі підписки: ${err.message}\n(Перевірте, чи є тип підписки у таблиці Subscription)`
+        `❌ Ошибка БД при выдаче подписки: ${err.message}\n(Проверьте, есть ли тип подписки в таблице Subscription)`
       );
     }
   }

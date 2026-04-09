@@ -36,7 +36,7 @@ export class ServersService {
     const availableServerIds = this.getAvailableServerIds(settings.allowedServers);
 
     if (!availableServerIds.includes(serverId)) {
-      throw new Error('У вас немає доступу до цього сервера!');
+      throw new Error('У вас нет доступа к этому серверу!');
     }
 
     let selectedServers = this.getSelectedServers(settings);

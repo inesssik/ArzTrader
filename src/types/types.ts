@@ -42,6 +42,6 @@ export interface ParsedListing {
 }
 
 export enum SubscriptionType {
-  MARKET_ALERTS = 1, // Сповіщення про вигідні товари
-  STATISTICS = 2 // Підписка на графіки/статистику (на майбутнє)
+  MARKET_ALERTS = 1, // Уведомления о выгодных товарах
+  STATISTICS = 2 // Подписка на графики/статистику (на будущее)
 }

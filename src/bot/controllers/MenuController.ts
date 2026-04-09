@@ -31,13 +31,13 @@ export class MenuController {
 
   private async handleStart(ctx: Context) {
     const text =
-      '👋 *Вітаємо у ArzTrader Bot!*\n\nТут ви можете керувати своїми підписками та отримувати сповіщення про найвигідніші угоди на ринку.';
+      '👋 *Добро пожаловать в ArzTrader Bot!*\n\nЗдесь вы можете управлять своими подписками и получать уведомления о самых выгодных сделках на рынке.';
 
-    // Використовуємо InlineKeyboard
+    // Используем InlineKeyboard
     const keyboard = new InlineKeyboard()
-      .text('🛒 Мої підписки', 'menu_subs')
+      .text('🛒 Мои подписки', 'menu_subs')
       .row()
-      .text('👨‍💻 Підтримка', 'menu_support');
+      .text('👨‍💻 Поддержка', 'menu_support');
 
     if (ctx.callbackQuery) {
       await ctx.editMessageText(text, { reply_markup: keyboard, parse_mode: 'Markdown' });
@@ -48,8 +48,8 @@ export class MenuController {
   }
 
   private async handleSupport(ctx: Context) {
-    const text = "👨‍💻 Зв'язок з підтримкою та розробником: @floypi";
-    const keyboard = new InlineKeyboard().text('🔙 Головне меню', 'menu_main');
+    const text = "👨‍💻 Связь с поддержкой и разработчиком: @floypi";
+    const keyboard = new InlineKeyboard().text('🔙 Главное меню', 'menu_main');
 
     await ctx.editMessageText(text, { reply_markup: keyboard, parse_mode: 'Markdown' });
     await ctx.answerCallbackQuery();
@@ -59,26 +59,26 @@ export class MenuController {
     const userId = ctx.from!.id.toString();
     const activeSub = await this.userSubscriptionService.getActiveSubscription(userId, SubscriptionType.MARKET_ALERTS);
 
-    let text = '🛒 *Ваші підписки*\n\n';
+    let text = '🛒 *Ваши подписки*\n\n';
     const keyboard = new InlineKeyboard();
 
     if (activeSub) {
-      text += `✅ *Market Alerts*\n⏳ Активна до: _${activeSub.expiresAt.toLocaleDateString('uk-UA')}_`;
-      keyboard.text('⚙️ Налаштування сповіщень', 'menu_settings').row();
+      text += `✅ *Market Alerts*\n⏳ Активна до: _${activeSub.expiresAt.toLocaleDateString('ru-RU')}_`;
+      keyboard.text('⚙️ Настройки уведомлений', 'menu_settings').row();
     } else {
-      text += `❌ У вас немає активних підписок.`;
-      keyboard.text('💳 Купити підписку', 'menu_buy').row();
+      text += `❌ У вас нет активных подписок.`;
+      keyboard.text('💳 Купить подписку', 'menu_buy').row();
     }
 
-    keyboard.text('🔙 Головне меню', 'menu_main');
+    keyboard.text('🔙 Главное меню', 'menu_main');
 
     await ctx.editMessageText(text, { reply_markup: keyboard, parse_mode: 'Markdown' });
     await ctx.answerCallbackQuery();
   }
 
   private async handleBuy(ctx: Context) {
-    const text = '💳 *Купівля підписки*\n\nДля оформлення підписки зверніться до адміністратора:\n👉 @floypi';
-    const keyboard = new InlineKeyboard().text('🔙 Назад до підписок', 'menu_subs');
+    const text = '💳 *Покупка подписки*\n\nДля оформления подписки обратитесь к администратору:\n👉 @floypi';
+    const keyboard = new InlineKeyboard().text('🔙 Назад к подпискам', 'menu_subs');
 
     await ctx.editMessageText(text, { reply_markup: keyboard, parse_mode: 'Markdown' });
     await ctx.answerCallbackQuery();
@@ -89,18 +89,18 @@ export class MenuController {
     const activeSub = await this.userSubscriptionService.getActiveSubscription(userId, SubscriptionType.MARKET_ALERTS);
 
     if (!activeSub) {
-      await ctx.answerCallbackQuery({ text: '❌ Підписка не активна!', show_alert: true });
+      await ctx.answerCallbackQuery({ text: '❌ Подписка не активна!', show_alert: true });
       return;
     }
 
-    const text = `⚙️ *Налаштування Market Alerts*\n\nОберіть параметр, який хочете налаштувати:`;
+    const text = `⚙️ *Настройки Market Alerts*\n\nВыберите параметр, который хотите настроить:`;
 
     const keyboard = new InlineKeyboard()
-      .text('📊 Відсоток вигоди', 'menu_settings_deviation')
+      .text('📊 Процент выгоды', 'menu_settings_deviation')
       .row()
-      .text('🌐 Сервери', 'menu_settings_servers')
+      .text('🌐 Серверы', 'menu_settings_servers')
       .row()
-      .text('🔙 Назад до підписок', 'menu_subs');
+      .text('🔙 Назад к подпискам', 'menu_subs');
 
     await ctx.editMessageText(text, { reply_markup: keyboard, parse_mode: 'Markdown' });
     await ctx.answerCallbackQuery();
@@ -111,18 +111,18 @@ export class MenuController {
     const activeSub = await this.userSubscriptionService.getActiveSubscription(userId, SubscriptionType.MARKET_ALERTS);
 
     if (!activeSub) {
-      await ctx.answerCallbackQuery({ text: '❌ Підписка не активна!', show_alert: true });
+      await ctx.answerCallbackQuery({ text: '❌ Подписка не активна!', show_alert: true });
       return;
     }
 
     const settings = (activeSub.settings as unknown as MarketAlertSettings) || { deviationPercent: 40, servers: 'ALL' };
-    const text = `📊 *Налаштування Deviation Percent*\n\nПоточний рівень: ${settings.deviationPercent}%\n_Бот надсилатиме сповіщення, якщо ціна дешевша за середню на ${settings.deviationPercent}%._`;
+    const text = `📊 *Настройка Deviation Percent*\n\nТекущий уровень: ${settings.deviationPercent}%\n_Бот будет отправлять уведомления, если цена дешевле средней на ${settings.deviationPercent}%._`;
 
     const keyboard = new InlineKeyboard()
       .text('➖ (-5%)', 'settings_dev_minus')
       .text('➕ (+5%)', 'settings_dev_plus')
       .row()
-      .text('🔙 Назад до налаштувань', 'menu_settings');
+      .text('🔙 Назад к настройкам', 'menu_settings');
 
     if (ctx.callbackQuery) {
       await ctx.editMessageText(text, { reply_markup: keyboard, parse_mode: 'Markdown' });
@@ -134,11 +134,11 @@ export class MenuController {
 
   private async handleDeviationChange(ctx: Context) {
     const userId = ctx.from!.id.toString();
-    const action = ctx.match![1]; // 'plus' або 'minus'
+    const action = ctx.match![1]; // 'plus' или 'minus'
 
     const activeSub = await this.userSubscriptionService.getActiveSubscription(userId, SubscriptionType.MARKET_ALERTS);
     if (!activeSub) {
-      await ctx.answerCallbackQuery({ text: '❌ Підписка не активна!' });
+      await ctx.answerCallbackQuery({ text: '❌ Подписка не активна!' });
       return;
     }
 
@@ -151,12 +151,12 @@ export class MenuController {
         ...settings,
         deviationPercent: newDeviation
       });
-      await ctx.answerCallbackQuery({ text: `✅ Змінено на ${newDeviation}%` });
+      await ctx.answerCallbackQuery({ text: `✅ Изменено на ${newDeviation}%` });
 
-      // Оновлюємо UI (перемальовуємо повідомлення)
+      // Обновляем UI (перерисовываем сообщение)
       await this.handleDeviationSettings(ctx);
     } else {
-      await ctx.answerCallbackQuery({ text: '⚠️ Досягнуто ліміт!' });
+      await ctx.answerCallbackQuery({ text: '⚠️ Достигнут лимит!' });
     }
   }
 
@@ -165,7 +165,7 @@ export class MenuController {
     const activeSub = await this.userSubscriptionService.getActiveSubscription(userId, SubscriptionType.MARKET_ALERTS);
 
     if (!activeSub) {
-      await ctx.answerCallbackQuery({ text: '❌ Підписка не активна!', show_alert: true });
+      await ctx.answerCallbackQuery({ text: '❌ Подписка не активна!', show_alert: true });
       return;
     }
 
@@ -212,19 +212,19 @@ export class MenuController {
     if (availableServerIds.length > 1) {
       const allSelected = selectedServers.length === availableServerIds.length;
       keyboard
-        .text(allSelected ? '❌ Вимкнути всі' : '✅ Увімкнути всі', `settings_servers_toggle_all_${currentPage}`)
+        .text(allSelected ? '❌ Выключить все' : '✅ Включить все', `settings_servers_toggle_all_${currentPage}`)
         .row();
     }
 
-    keyboard.text('🔙 Назад до налаштувань', 'menu_settings');
+    keyboard.text('🔙 Назад к настройкам', 'menu_settings');
 
     let text = '';
     if (availableServerIds.length === 1) {
-      text = `🌐 *Налаштування серверів*\n\nВам доступний лише сервер: *${serversArr[availableServerIds[0]!]}*.`;
+      text = `🌐 *Настройка серверов*\n\nВам доступен только сервер: *${serversArr[availableServerIds[0]!]}*.`;
     } else if (allowedServers === 'ALL') {
-      text = '🌐 *Налаштування серверів*\n\nОберіть сервери, з яких ви хочете отримувати сповіщення.';
+      text = '🌐 *Настройка серверов*\n\nВыберите серверы, с которых вы хотите получать уведомления.';
     } else {
-      text = `🌐 *Налаштування серверів*\n\nВам надано доступ до ${availableServerIds.length} серверів. Оберіть потрібні.`;
+      text = `🌐 *Настройка серверов*\n\nВам предоставлен доступ к ${availableServerIds.length} серверам. Выберите нужные.`;
     }
 
     if (ctx.callbackQuery) {
@@ -244,7 +244,7 @@ export class MenuController {
 
     const activeSub = await this.userSubscriptionService.getActiveSubscription(userId, SubscriptionType.MARKET_ALERTS);
     if (!activeSub) {
-      await ctx.answerCallbackQuery({ text: '❌ Підписка не активна!' });
+      await ctx.answerCallbackQuery({ text: '❌ Подписка не активна!' });
       return;
     }
 
@@ -268,7 +268,7 @@ export class MenuController {
 
     const activeSub = await this.userSubscriptionService.getActiveSubscription(userId, SubscriptionType.MARKET_ALERTS);
     if (!activeSub) {
-      await ctx.answerCallbackQuery({ text: '❌ Підписка не активна!' });
+      await ctx.answerCallbackQuery({ text: '❌ Подписка не активна!' });
       return;
     }
 

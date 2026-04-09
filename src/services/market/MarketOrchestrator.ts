@@ -24,31 +24,31 @@ export class MarketOrchestrator {
   private async syncTask() {
     while (true) {
       try {
-        this.logger.info('[MarketSync] Починаємо новий цикл парсингу...');
+        this.logger.info('[MarketSync] Начинаем новый цикл парсинга...');
 
-        // 1. Спочатку завантажуємо Vice City, оскільки він оновлює базові ціни (updateVCPrices)
+        // 1. Сначала загружаем Vice City, так как он обновляет базовые цены (updateVCPrices)
         try {
-          this.logger.debug(`[MarketSync] Отримання даних Vice City (Server 0)...`);
+          this.logger.debug(`[MarketSync] Получение данных Vice City (Server 0)...`);
           const rawVCData = await this.apiService.getOnlines(0);
 
           if (rawVCData && rawVCData.length > 0) {
             const parsedVCData = parseGlobalMarket(rawVCData);
-            
-            // Оновлюємо ціни VC перед тим, як аналізувати звичайні сервери
+
+            // Обновляем цены VC перед анализом обычных серверов
             this.marketAnalyzerService.updateVCPrices(parsedVCData);
-            
+
             const vcDeals = this.marketAnalyzerService.findProfitableDeals(parsedVCData);
             await this.notificationService.processAlerts(vcDeals);
           }
         } catch (vcError) {
-          this.logger.error(`[MarketSync] Помилка завантаження VC. Пропускаємо цикл.`, vcError);
+          this.logger.error(`[MarketSync] Ошибка загрузки VC. Пропускаем цикл.`, vcError);
           await new Promise(resolve => setTimeout(resolve, 1000));
-          continue; // Якщо немає еталонних цін VC, далі йти немає сенсу
+          continue; // Если нет эталонных цен VC, дальше идти нет смысла
         }
 
-        // 2. Паралельний парсинг усіх інших серверів через Promise.all
-        this.logger.info(`[MarketSync] Запуск паралельного завантаження ${this.REGULAR_SERVERS.length} серверів...`);
-        
+        // 2. Параллельный парсинг всех остальных серверов через Promise.all
+        this.logger.info(`[MarketSync] Запуск параллельной загрузки ${this.REGULAR_SERVERS.length} серверов...`);
+
         const serverPromises = this.REGULAR_SERVERS.map(async (serverId) => {
           try {
             const rawData = await this.apiService.getOnlines(serverId);
@@ -59,22 +59,22 @@ export class MarketOrchestrator {
               await this.notificationService.processAlerts(deals);
             }
           } catch (serverError) {
-            // Перехоплюємо помилку тут, щоб Promise.all не впав повністю через один сервер
-            this.logger.error(`[MarketSync] Помилка завантаження сервера ${serverId}`, serverError);
+            // Перехватываем ошибку здесь, чтобы Promise.all не упал полностью из-за одного сервера
+            this.logger.error(`[MarketSync] Ошибка загрузки сервера ${serverId}`, serverError);
           }
         });
 
-        // Чекаємо завершення парсингу всіх 32 серверів
+        // Ждем завершения парсинга всех 32 серверов
         await Promise.all(serverPromises);
 
-        this.logger.info('[MarketSync] Цикл завершено успішно.');
+        this.logger.info('[MarketSync] Цикл завершен успешно.');
 
       } catch (error) {
-        this.logger.error('[MarketSync] Глобальна помилка синхронізації', error);
+        this.logger.error('[MarketSync] Глобальная ошибка синхронизации', error);
       }
 
-      this.logger.info('[MarketSync] Очікування перед наступним циклом...');
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Затримка 1 сек (можливо, варто збільшити)
+      this.logger.info('[MarketSync] Ожидание перед следующим циклом...');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Задержка 1 сек (возможно, стоит увеличить)
     }
   }
 }

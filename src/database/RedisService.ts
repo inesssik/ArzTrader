@@ -15,8 +15,8 @@ export class RedisService {
   }
 
   public async init() {
-    this.client.on('error', err => this.logger.error('[RedisService] Помилка:', err));
-    this.client.on('connect', () => this.logger.info('[RedisService] Підключено до Redis'));
+    this.client.on('error', err => this.logger.error('[RedisService] Ошибка:', err));
+    this.client.on('connect', () => this.logger.info('[RedisService] Подключено к Redis'));
     await this.client.connect();
   }
 

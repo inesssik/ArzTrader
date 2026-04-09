@@ -16,11 +16,11 @@ export class MarketSyncService {
 
   async syncFullMarket(listings: ParsedListing[]) {
     if (listings.length === 0) {
-      this.logger.info(`[SYNC] Немає товарів для синхронізації...`);
+      this.logger.info(`[SYNC] Нет товаров для синхронизации...`);
       return;
     }
 
-    this.logger.info(`[SYNC] Початок синхронізації ${listings.length} товарів...`);
+    this.logger.info(`[SYNC] Начало синхронизации ${listings.length} товаров...`);
 
     const uniqueItemNames = [...new Set(listings.map(l => l.itemName))];
     await this.prisma.item.createMany({
@@ -36,11 +36,11 @@ export class MarketSyncService {
     // await this.syncListing(listings, itemMap);
     await this.syncHistoryBackground(listings, itemMap);
 
-    this.logger.info(`[SYNC] Синхронізація успішно завершена!`);
+    this.logger.info(`[SYNC] Синхронизация успешно завершена!`);
   }
 
   private async syncHistoryBackground(listings: ParsedListing[], itemMap: Map<string, number>) {
-    this.logger.info(`[SYNC] Початок оновлення історії...`);
+    this.logger.info(`[SYNC] Начало обновления истории...`);
     const timeoutThreshold = new Date(Date.now() - this.config.values.SESSION_TIMEOUT_MINUTES * 60 * 1000);
     const syncTimestamp = listings[0]?.timestamp || new Date();
     const CHUNK_SIZE = 4000;
@@ -81,7 +81,7 @@ export class MarketSyncService {
       }
 
       if (historyCreates.length > 0) {
-        this.logger.info(`[SYNC] Створення ${historyCreates.length} нових записів в історії...`);
+        this.logger.info(`[SYNC] Создание ${historyCreates.length} новых записей в истории...`);
         for (let i = 0; i < historyCreates.length; i += CHUNK_SIZE) {
           const chunk = historyCreates.slice(i, i + CHUNK_SIZE);
           await this.prisma.playerStallHistory.createMany({ data: chunk, skipDuplicates: true });
@@ -90,7 +90,7 @@ export class MarketSyncService {
 
       if (historyUpdateIds.size > 0) {
         const idsToUpdate = Array.from(historyUpdateIds);
-        this.logger.info(`[SYNC] Оновлення часу для ${idsToUpdate.length} існуючих сесій...`);
+        this.logger.info(`[SYNC] Обновление времени для ${idsToUpdate.length} существующих сессий...`);
         for (let i = 0; i < idsToUpdate.length; i += CHUNK_SIZE) {
           const chunkIds = idsToUpdate.slice(i, i + CHUNK_SIZE);
           await this.prisma.playerStallHistory.updateMany({
@@ -100,9 +100,9 @@ export class MarketSyncService {
         }
       }
 
-      this.logger.info(`[SYNC] Історія успішно оновлена!`);
+      this.logger.info(`[SYNC] История успешно обновлена!`);
     } catch (error) {
-      this.logger.error(`[SYNC] Помилка оновлення історії:`, error);
+      this.logger.error(`[SYNC] Ошибка обновления истории:`, error);
     }
   }
 }

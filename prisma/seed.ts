@@ -10,7 +10,7 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
-  console.log('🌱 Починаємо наповнення бази даних (Seeding)...');
+  console.log('🌱 Начинаем наполнение базы данных (Seeding)...');
   await fillSubTypes();
   await fillUsers();
   await fillSubsForOwners();
@@ -61,13 +61,13 @@ async function fillSubTypes() {
     }
   });
 
-  console.log('✅ Створені/оновлені підписки:');
+  console.log('✅ Созданные/обновленные подписки:');
   console.log({ alertSub, statsSub });
 }
 
 main()
   .catch(e => {
-    console.error('❌ Помилка під час сідінгу:', e);
+    console.error('❌ Ошибка во время сидинга:', e);
     process.exit(1);
   })
   .finally(async () => {

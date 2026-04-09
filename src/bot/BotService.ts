@@ -32,9 +32,9 @@ export class BotService {
     this.menuController.register(this.tgBot);
     this.adminController.register(this.tgBot);
 
-    // Fallback для невідомих команд
+    // Fallback для неизвестных команд
     this.tgBot.on('message', async ctx => {
-      await ctx.reply('🤔 Я не розумію цю команду. Введіть /start.');
+      await ctx.reply('🤔 Я не понимаю эту команду. Введите /start.');
     });
 
     this.tgBot.catch(err => {
