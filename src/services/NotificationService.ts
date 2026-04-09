@@ -53,8 +53,7 @@ export class NotificationService {
                 listing.serverId === 0 ? baseAvgPrice / this.config.values.VC_PRICE_CURRENCY : baseAvgPrice
               );
 
-              let profitTag = '✅ Выгодный товар\n';
-              if (deviation >= 50) profitTag = '🔥 ЛУЧШАЯ ЦЕНА\n';
+              const profitTag = deviation >= 50 ? '🔥 ЛУЧШАЯ ЦЕНА 🔥\n\n' : '✅ Выгодный товар ✅\n\n';
 
               const message =
                 `<b>${profitTag}</b>` +
