@@ -4,7 +4,6 @@ import { NotificationService } from '../../services/NotificationService';
 import { LoggerService } from '../../utils/Logger';
 import { parseGlobalMarket } from '../../utils/marketMapper';
 import { MarketAnalyzerService } from './MarketAnalyzerService';
-import { CanceledError } from 'axios';
 // import { MarketSyncService } from './MarketSyncService'; // Не используется в конструкторе, можно убрать если не нужен
 
 @singleton()
@@ -42,7 +41,7 @@ export class MarketOrchestrator {
             await this.notificationService.processAlerts(vcDeals);
           }
         } catch (vcError) {
-          this.logger.error(`[MarketSync] Ошибка загрузки VC. Пропускаем цикл.`, (vcError as Error).message);
+          this.logger.error(`[MarketSync] Ошибка загрузки VC. Пропускаем цикл: ${(vcError as Error).message}`);
           await new Promise(resolve => setTimeout(resolve, 1000));
           continue; // Если нет эталонных цен VC, дальше идти нет смысла
         }
@@ -60,7 +59,7 @@ export class MarketOrchestrator {
               await this.notificationService.processAlerts(deals);
             }
           } catch (serverError) {
-            this.logger.error(`[MarketSync] Ошибка загрузки сервера ${serverId}`, (serverError as Error).message);
+            this.logger.error(`[MarketSync] Ошибка загрузки сервера ${serverId}: ${(serverError as Error).message}`);
           }
         });
 

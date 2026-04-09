@@ -46,22 +46,21 @@ export class MarketAnalyzerService {
     const sellListings = listings.filter(l => l.type === ListingTypes.SELL);
 
     for (const listing of sellListings) {
-      // Берем макс. цену скупки из кэша VC
       const maxBuyPrice = this.vcMaxBuyPrices.get(listing.itemName);
-
-      if (!maxBuyPrice) continue; // Нет скупки на VC для этого товара
+      if (!maxBuyPrice) continue;
 
       const currentListingStandardPrice = listing.serverId === 0 ? listing.price * vcMultiplier : listing.price;
-
       if (currentListingStandardPrice >= maxBuyPrice) continue;
 
-      const deviation = ((maxBuyPrice - currentListingStandardPrice) / maxBuyPrice) * 100;
+      const diff = maxBuyPrice - currentListingStandardPrice;
+      const deviation = (diff / maxBuyPrice) * 100;
 
       if (deviation >= this.config.values.MIN_DEVIATION_PERCENT) {
         deals.push({
           listing,
           baseAvgPrice: maxBuyPrice,
-          deviation
+          deviation,
+          profit: diff
         });
       }
     }

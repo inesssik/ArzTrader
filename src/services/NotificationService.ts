@@ -33,7 +33,7 @@ export class NotificationService {
       if (activeSubscriptions.length === 0) return;
 
       for (const deal of deals) {
-        const { listing, deviation, baseAvgPrice } = deal;
+        const { listing, deviation, baseAvgPrice, profit } = deal;
         const dealKey = `deal:${listing.username}_${listing.itemId}_${listing.price}_${listing.serverId}`;
         const isNewDeal = await this.redis.setIfNotExists(dealKey, this.config.values.DEAL_TTL_SECONDS);
 
@@ -45,15 +45,13 @@ export class NotificationService {
             };
 
             const isServerMatch = this.serversService.isServerMatch(settings, listing.serverId);
-
             const isDeviationMatch = deviation >= settings.deviationPercent;
-
             if (isServerMatch && isDeviationMatch) {
               const baseAvgPriceParsed = Math.round(
                 listing.serverId === 0 ? baseAvgPrice / this.config.values.VC_PRICE_CURRENCY : baseAvgPrice
               );
 
-              const profitTag = deviation >= 50 ? '🔥 ЛУЧШАЯ ЦЕНА 🔥\n\n' : '✅ Выгодный товар ✅\n\n';
+              const profitTag = deviation >= 50 && profit >= 50000000 ? '🔥 ЛУЧШАЯ ЦЕНА 🔥\n\n' : '✅ Выгодный товар ✅\n\n';
 
               const message =
                 `<b>${profitTag}</b>` +

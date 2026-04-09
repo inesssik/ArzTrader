@@ -27,6 +27,7 @@ export interface ProfitableDeal {
   listing: ParsedListing;
   baseAvgPrice: number;
   deviation: number;
+  profit: number;
 }
 
 export interface ParsedListing {
