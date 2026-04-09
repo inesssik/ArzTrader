@@ -23,7 +23,7 @@ export class AdminController {
     const userIdStr = ctx.from!.id.toString();
 
     if (!adminIds.includes(userIdStr)) {
-      return; 
+      return;
     }
 
     const _match = ctx.message?.text?.match(/^\/give_sub\s+(\d+)\s+(\d+)\s+(.+)$/);
@@ -66,10 +66,12 @@ export class AdminController {
         hours,
         servers
       );
-      
+
       await ctx.reply(`✅ Підписка оновлена для ${targetUserId} на ${hours} годин. Сервери: ${serversStr}`);
     } catch (err: any) {
-      await ctx.reply(`❌ Помилка БД при видачі підписки: ${err.message}\n(Перевірте, чи є тип підписки у таблиці Subscription)`);
+      await ctx.reply(
+        `❌ Помилка БД при видачі підписки: ${err.message}\n(Перевірте, чи є тип підписки у таблиці Subscription)`
+      );
     }
   }
 }

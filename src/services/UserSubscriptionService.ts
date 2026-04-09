@@ -33,11 +33,15 @@ export class UserSubscriptionService {
 
     if (existing) {
       const newExpiresAt = new Date(existing.expiresAt.getTime() + hours * 60 * 60 * 1000);
-      
-      const currentSettings = (existing.settings as unknown as MarketAlertSettings) || { deviationPercent: 40, servers: 'ALL', allowedServers: 'ALL' };
-      
+
+      const currentSettings = (existing.settings as unknown as MarketAlertSettings) || {
+        deviationPercent: 40,
+        servers: 'ALL',
+        allowedServers: 'ALL'
+      };
+
       let finalAllowedServers: number[] | 'ALL' = 'ALL';
-      
+
       if (servers === 'ALL' || currentSettings.allowedServers === 'ALL') {
         finalAllowedServers = 'ALL';
       } else {
@@ -48,9 +52,9 @@ export class UserSubscriptionService {
       let finalSelectedServers: number[] | 'ALL' = currentSettings.servers;
       if (finalSelectedServers !== 'ALL') {
         if (servers === 'ALL') {
-           finalSelectedServers = 'ALL';
+          finalSelectedServers = 'ALL';
         } else {
-           finalSelectedServers = Array.from(new Set([...finalSelectedServers, ...servers]));
+          finalSelectedServers = Array.from(new Set([...finalSelectedServers, ...servers]));
         }
       }
 
@@ -67,7 +71,7 @@ export class UserSubscriptionService {
       });
     } else {
       const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000);
-      
+
       return this.prisma.userSubscription.create({
         data: {
           userId,
@@ -75,7 +79,7 @@ export class UserSubscriptionService {
           expiresAt,
           settings: {
             deviationPercent: 40,
-            servers: servers, 
+            servers: servers,
             allowedServers: servers
           } as any
         }
