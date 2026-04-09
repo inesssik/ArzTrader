@@ -59,7 +59,7 @@ export class NotificationService {
                 `💵 Купить: <b>${listing.price.toLocaleString()}$</b> <i>(${deviation.toFixed(1)}%)</i>\n` +
                 `♻️ Скупка: <b>${baseAvgPriceParsed.toLocaleString()}$</b>\n` +
                 `🚀 Выгода: <b>+${profitParsed.toLocaleString()}$</b>\n\n` +
-                `🛒 <b>[${listing.serverId}] ${getServerName(listing.serverId)}</b> | Лавка: <code>${listing.lavkaUid}</code> | Продавец: <code>${listing.username}</code>`;
+                `🛒 <b>[${listing.serverId}] ${getServerName(listing.serverId)}</b> | Лавка: <b>${listing.lavkaUid}</b> | Продавец: <b>${listing.username}</b>`;
 
               this.botService
                 .sendMessage(sub.userId, message, { parse_mode: 'HTML' })
