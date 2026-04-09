@@ -5,6 +5,8 @@ import { RedisService } from '../database/RedisService';
 import { type MarketAlertSettings, type ProfitableDeal, SubscriptionType } from '../types/types';
 import { LoggerService } from '../utils/Logger';
 import { ConfigService } from '../config/ConfigService';
+import { getServerName } from '../config/servers';
+import { ServersService } from './ServersService';
 
 @singleton()
 export class NotificationService {
@@ -13,7 +15,8 @@ export class NotificationService {
     private readonly botService: BotService,
     private readonly logger: LoggerService,
     private readonly redis: RedisService,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
+    private readonly serversService: ServersService
   ) {}
 
   public async processAlerts(deals: ProfitableDeal[]) {
@@ -41,20 +44,28 @@ export class NotificationService {
               servers: 'ALL'
             };
 
-            const isServerMatch = settings.servers === 'ALL' || settings.servers.includes(listing.serverId);
+            const isServerMatch = this.serversService.isServerMatch(settings, listing.serverId);
+
             const isDeviationMatch = deviation >= settings.deviationPercent;
 
             if (isServerMatch && isDeviationMatch) {
-              const baseAvgPriceParsed = Math.round(listing.serverId === 0 ? baseAvgPrice / this.config.values.VC_PRICE_CURRENCY : baseAvgPrice);
+              const baseAvgPriceParsed = Math.round(
+                listing.serverId === 0 ? baseAvgPrice / this.config.values.VC_PRICE_CURRENCY : baseAvgPrice
+              );
+
+              let profitTag = '';
+              if (deviation >= 50) profitTag = 'ЛУЧШАЯ ЦЕНА 🔥\n';
+              else profitTag = 'Выгодный товар ✅\n';
 
               const message =
+                `<b>${profitTag}</b>` +
                 `📦 <b>${listing.itemName}</b>\n` +
                 `💰 Цена: ${listing.price.toLocaleString()}$ <i>(${deviation.toFixed(1)}%)</i>\n` +
                 `📈 Скуп VC: ${baseAvgPriceParsed.toLocaleString()}$\n` +
                 `🎁 Кол-во: ${listing.quantity}\n` +
                 `🏬 Лавка: ${listing.lavkaUid}\n` +
                 `👤 Игрок: ${listing.username}\n` +
-                `🖥 Сервер: ${listing.serverId}`;
+                `🖥 Сервер: [${listing.serverId}] ${getServerName(listing.serverId)}`;
 
               this.botService
                 .sendMessage(sub.userId, message, { parse_mode: 'HTML' })

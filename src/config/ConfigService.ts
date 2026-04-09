@@ -24,6 +24,7 @@ const configSchema = z.object({
     .string()
     .transform(arzApiProxyTransformer)
     .refine(arr => arr.length > 0, 'Nonempty'),
+  ADMIN_IDS: z.string().default('').transform(v => v.split(',').map(s => s.trim()).filter(Boolean)),
   SESSION_TIMEOUT_MINUTES: z.coerce.number(),
   MIN_DEVIATION_PERCENT: z.coerce.number(),
   VC_PRICE_CURRENCY: z.coerce.number(),

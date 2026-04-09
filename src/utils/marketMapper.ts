@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 
 const items = JSON.parse(await fs.readFile('./src/data/items.json', { encoding: 'utf-8' })) as Record<string, string>;
 
+
 function resolveItemInfo(rawItem: string | number): { itemId: string; itemName: string } {
   const rawItemId = String(rawItem);
 

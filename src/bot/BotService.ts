@@ -4,6 +4,7 @@ import { ConfigService } from '../config/ConfigService';
 import { UserService } from '../services/UserService';
 import { LoggerService } from '../utils/Logger';
 import { MenuController } from './controllers/MenuController';
+import { AdminController } from './controllers/AdminController';
 
 @singleton()
 export class BotService {
@@ -13,7 +14,8 @@ export class BotService {
     private readonly configService: ConfigService,
     private readonly loggerService: LoggerService,
     private readonly userService: UserService,
-    private readonly menuController: MenuController // Інжектимо контролер
+    private readonly menuController: MenuController, // Інжектимо контролер
+    private readonly adminController: AdminController
   ) {
     this.tgBot = new Bot(this.configService.values.BOT_TOKEN);
   }
@@ -28,6 +30,7 @@ export class BotService {
 
     // Реєструємо роути
     this.menuController.register(this.tgBot);
+    this.adminController.register(this.tgBot);
 
     // Fallback для невідомих команд
     this.tgBot.on('message', async ctx => {

@@ -25,7 +25,7 @@ async function bootstrap() {
   container.resolve(MenuController);
 
   const redis = container.resolve(RedisService);
-  redis.init();
+  await redis.init();
 
   const marketOrchestrator = container.resolve(MarketOrchestrator);
   marketOrchestrator.init();

@@ -20,6 +20,7 @@ export enum ListingTypes {
 export interface MarketAlertSettings {
   deviationPercent: number;
   servers: number[] | 'ALL';
+  allowedServers?: number[] | 'ALL'; // Новое поле для ограничения определенных серверов
 }
 
 export interface ProfitableDeal {
