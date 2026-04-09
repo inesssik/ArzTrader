@@ -4,6 +4,7 @@ import { NotificationService } from '../../services/NotificationService';
 import { LoggerService } from '../../utils/Logger';
 import { parseGlobalMarket } from '../../utils/marketMapper';
 import { MarketAnalyzerService } from './MarketAnalyzerService';
+import { CanceledError } from 'axios';
 // import { MarketSyncService } from './MarketSyncService'; // Не используется в конструкторе, можно убрать если не нужен
 
 @singleton()
@@ -41,7 +42,7 @@ export class MarketOrchestrator {
             await this.notificationService.processAlerts(vcDeals);
           }
         } catch (vcError) {
-          this.logger.error(`[MarketSync] Ошибка загрузки VC. Пропускаем цикл.`, vcError);
+          this.logger.error(`[MarketSync] Ошибка загрузки VC. Пропускаем цикл.`, (vcError as Error).message);
           await new Promise(resolve => setTimeout(resolve, 1000));
           continue; // Если нет эталонных цен VC, дальше идти нет смысла
         }
@@ -49,7 +50,7 @@ export class MarketOrchestrator {
         // 2. Параллельный парсинг всех остальных серверов через Promise.all
         this.logger.info(`[MarketSync] Запуск параллельной загрузки ${this.REGULAR_SERVERS.length} серверов...`);
 
-        const serverPromises = this.REGULAR_SERVERS.map(async (serverId) => {
+        const serverPromises = this.REGULAR_SERVERS.map(async serverId => {
           try {
             const rawData = await this.apiService.getOnlines(serverId);
 
@@ -59,22 +60,18 @@ export class MarketOrchestrator {
               await this.notificationService.processAlerts(deals);
             }
           } catch (serverError) {
-            // Перехватываем ошибку здесь, чтобы Promise.all не упал полностью из-за одного сервера
-            this.logger.error(`[MarketSync] Ошибка загрузки сервера ${serverId}`, serverError);
+            this.logger.error(`[MarketSync] Ошибка загрузки сервера ${serverId}`, (serverError as Error).message);
           }
         });
 
-        // Ждем завершения парсинга всех 32 серверов
         await Promise.all(serverPromises);
-
         this.logger.info('[MarketSync] Цикл завершен успешно.');
-
       } catch (error) {
         this.logger.error('[MarketSync] Глобальная ошибка синхронизации', error);
       }
 
       this.logger.info('[MarketSync] Ожидание перед следующим циклом...');
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Задержка 1 сек (возможно, стоит увеличить)
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
 }

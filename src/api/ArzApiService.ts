@@ -1,4 +1,4 @@
-import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
+import axios, { CanceledError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
 import http from 'http';
 import https from 'https';
 import { HttpsProxyAgent } from 'https-proxy-agent';
