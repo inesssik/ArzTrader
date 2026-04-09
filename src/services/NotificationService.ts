@@ -51,17 +51,15 @@ export class NotificationService {
                 listing.serverId === 0 ? baseAvgPrice / this.config.values.VC_PRICE_CURRENCY : baseAvgPrice
               );
 
-              const profitTag = deviation >= 50 && profit >= 50000000 ? '🔥 ЛУЧШАЯ ЦЕНА 🔥\n\n' : '✅ Выгодный товар ✅\n\n';
+              const icon = deviation >= 50 && profit >= 50000000 ? '🔥' : '✅';
+              const profitParsed = Math.round(listing.serverId === 0 ? profit / 100 : profit);
 
               const message =
-                `<b>${profitTag}</b>` +
-                `📦 <b>${listing.itemName}</b>\n` +
-                `💰 Цена: ${listing.price.toLocaleString()}$ <i>(${deviation.toFixed(1)}%)</i>\n` +
-                `📈 Скуп VC: ${baseAvgPriceParsed.toLocaleString()}$\n` +
-                `🎁 Кол-во: ${listing.quantity}\n` +
-                `🏬 Лавка: ${listing.lavkaUid}\n` +
-                `👤 Игрок: ${listing.username}\n` +
-                `🖥 Сервер: [${listing.serverId}] ${getServerName(listing.serverId)}`;
+                `${icon} <b>${listing.itemName} | ${listing.quantity} шт.</b>\n\n` +
+                `💵 Купить: <b>${listing.price.toLocaleString()}$</b> <i>(${deviation.toFixed(1)}%)</i>\n` +
+                `♻️ Скупка: <b>${baseAvgPriceParsed.toLocaleString()}$</b>\n` +
+                `🚀 Выгода: <b>+${profitParsed.toLocaleString()}$</b>\n\n` +
+                `🛒 <b>[${listing.serverId}] ${getServerName(listing.serverId)}</b> | Лавка: <code>${listing.lavkaUid}</code> | Продавец: <code>${listing.username}</code>`;
 
               this.botService
                 .sendMessage(sub.userId, message, { parse_mode: 'HTML' })
