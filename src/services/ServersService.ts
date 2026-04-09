@@ -20,11 +20,11 @@ export class ServersService {
    */
   public getSelectedServers(settings: MarketAlertSettings): number[] {
     const availableServerIds = this.getAvailableServerIds(settings.allowedServers);
-    
+
     if (settings.servers === 'ALL') {
       return [...availableServerIds];
     }
-    
+
     return (settings.servers || []).filter(id => availableServerIds.includes(id));
   }
 
@@ -64,9 +64,9 @@ export class ServersService {
   public toggleAllServers(settings: MarketAlertSettings): MarketAlertSettings {
     const availableServerIds = this.getAvailableServerIds(settings.allowedServers);
     const selectedServers = this.getSelectedServers(settings);
-    
+
     const isAll = selectedServers.length === availableServerIds.length;
-    
+
     return {
       ...settings,
       servers: isAll ? [] : 'ALL'
@@ -78,7 +78,7 @@ export class ServersService {
    */
   public isServerMatch(settings: MarketAlertSettings, serverId: number): boolean {
     const allowedServers = settings.allowedServers ?? 'ALL';
-    
+
     if (allowedServers === 'ALL') {
       return settings.servers === 'ALL' || settings.servers.includes(serverId);
     } else {
@@ -86,5 +86,44 @@ export class ServersService {
       const isSelected = settings.servers === 'ALL' || settings.servers.includes(serverId);
       return isAllowed && isSelected;
     }
+  }
+
+  /**
+   * Retrieves the required deviation percentage for a given item based on its price and server.
+   * Checks server-specific settings and grids, falling back to global settings.
+   */
+  public getRequiredDeviation(settings: MarketAlertSettings, serverId: number, price: number): number {
+    const serverConfig = settings.serverConfigs?.[serverId];
+
+    // Helper function to find deviation in a grid
+    const getDeviationFromGrid = (grids: any[]) => {
+      if (!grids || grids.length === 0) return null;
+      for (const rule of grids) {
+        if (price >= rule.minPrice && price <= rule.maxPrice) {
+          return rule.deviationPercent;
+        }
+      }
+      return null;
+    };
+
+    // 1. Сначала проверяем индивидуальные настройки сервера
+    if (serverConfig) {
+      if (serverConfig.useGrid && serverConfig.grids) {
+        const gridDeviation = getDeviationFromGrid(serverConfig.grids);
+        if (gridDeviation !== null) return gridDeviation;
+      }
+      if (serverConfig.deviationPercent !== undefined) {
+        return serverConfig.deviationPercent;
+      }
+    }
+
+    // 2. Если нет индивидуальных или не подошла сетка, используем глобальные
+    if (settings.useGrid && settings.grids) {
+      const gridDeviation = getDeviationFromGrid(settings.grids);
+      if (gridDeviation !== null) return gridDeviation;
+    }
+
+    // 3. Fallback на глобальный единый процент
+    return settings.deviationPercent;
   }
 }

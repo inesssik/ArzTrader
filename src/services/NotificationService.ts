@@ -45,14 +45,23 @@ export class NotificationService {
             };
 
             const isServerMatch = this.serversService.isServerMatch(settings, listing.serverId);
-            const isDeviationMatch = deviation >= settings.deviationPercent;
+            const effectivePrice =
+              listing.serverId === 0 ? listing.price * this.config.values.VC_PRICE_CURRENCY : listing.price;
+            const targetDeviation = this.serversService.getRequiredDeviation(
+              settings,
+              listing.serverId,
+              effectivePrice
+            );
+            const isDeviationMatch = deviation >= targetDeviation;
             if (isServerMatch && isDeviationMatch) {
               const baseAvgPriceParsed = Math.round(
                 listing.serverId === 0 ? baseAvgPrice / this.config.values.VC_PRICE_CURRENCY : baseAvgPrice
               );
 
               const icon = deviation >= 50 && profit >= 50000000 ? '🔥' : '✅';
-              const profitParsed = Math.round(listing.serverId === 0 ? profit / 100 : profit);
+              const profitParsed = Math.round(
+                listing.serverId === 0 ? profit / this.config.values.VC_PRICE_CURRENCY : profit
+              );
 
               const message =
                 `${icon} <b>${listing.itemName} | ${listing.quantity} шт.</b>\n\n` +

@@ -17,10 +17,25 @@ export enum ListingTypes {
   BUY = 'BUY'
 }
 
+export interface ProfitGridRule {
+  minPrice: number;
+  maxPrice: number;
+  deviationPercent: number;
+}
+
+export interface ServerConfig {
+  deviationPercent?: number;
+  grids?: ProfitGridRule[];
+  useGrid?: boolean;
+}
+
 export interface MarketAlertSettings {
   deviationPercent: number;
+  grids?: ProfitGridRule[];
+  useGrid?: boolean;
   servers: number[] | 'ALL';
   allowedServers?: number[] | 'ALL'; // Новое поле для ограничения определенных серверов
+  serverConfigs?: Record<number, ServerConfig>;
 }
 
 export interface ProfitableDeal {
