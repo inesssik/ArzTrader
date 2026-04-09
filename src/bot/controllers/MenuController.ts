@@ -30,6 +30,7 @@ export class MenuController {
     bot.callbackQuery('menu_settings_deviation', this.handleDeviationMenu.bind(this));
     bot.callbackQuery('menu_dev_global', this.handleDevGlobal.bind(this));
     bot.callbackQuery(/settings_dev_(plus|minus)/, this.handleDeviationChange.bind(this));
+    bot.callbackQuery('dev_global_set_deviation', this.handleGlobalSetDeviationPrompt.bind(this));
     bot.callbackQuery('dev_global_toggle_grid', this.handleGlobalToggleGrid.bind(this));
     bot.callbackQuery('dev_global_edit_grid', this.handleGlobalEditGrid.bind(this));
 
@@ -37,6 +38,7 @@ export class MenuController {
     bot.callbackQuery(/dev_servers_page_(\d+)/, this.handleDevServersList.bind(this));
     bot.callbackQuery(/menu_dev_server_(\d+)/, this.handleDevServerSettings.bind(this));
     bot.callbackQuery(/dev_srv_(\d+)_(plus|minus)/, this.handleDevServerChange.bind(this));
+    bot.callbackQuery(/dev_srv_set_deviation_(\d+)/, this.handleServerSetDeviationPrompt.bind(this));
     bot.callbackQuery(/dev_srv_toggle_grid_(\d+)/, this.handleDevServerToggleGrid.bind(this));
     bot.callbackQuery(/dev_srv_edit_grid_(\d+)/, this.handleDevServerEditGrid.bind(this));
 
@@ -129,6 +131,8 @@ export class MenuController {
         const grids = this.parseGridText(ctx.message.text);
         await this.userSubscriptionService.updateSettings(activeSub.id, { ...settings, grids, useGrid: true });
         await ctx.reply('✅ Глобальная сетка профитов успешно сохранена и включена!');
+        await this.redisService.del(`user_state:${userId}`);
+        await this.handleDeviationMenu(ctx);
       } else if (state.action === 'WAIT_SERVER_GRID') {
         const serverId = state.serverId!;
         const grids = this.parseGridText(ctx.message.text);
@@ -140,13 +144,46 @@ export class MenuController {
         await ctx.reply(`✅ Сетка профитов для сервера **${serversArr[serverId]}** успешно сохранена!`, {
           parse_mode: 'Markdown'
         });
+        await this.redisService.del(`user_state:${userId}`);
+        await this.handleDeviationMenu(ctx);
+      } else if (state.action === 'WAIT_GLOBAL_DEVIATION') {
+        const value = parseFloat(ctx.message.text.replace('%', '').trim());
+        if (isNaN(value) || value < 5 || value > 99) {
+          await ctx.reply('❌ Введите число от 5 до 99. Попробуйте ещё раз или нажмите /start для отмены.');
+          return;
+        }
+        const newDeviation = Math.round(value * 10) / 10;
+        await this.userSubscriptionService.updateSettings(activeSub.id, {
+          ...settings,
+          deviationPercent: newDeviation
+        });
+        await ctx.reply(`✅ Глобальный процент выгоды установлен: *${newDeviation}%*`, { parse_mode: 'Markdown' });
+        await this.redisService.del(`user_state:${userId}`);
+        await this.handleDeviationMenu(ctx);
+      } else if (state.action === 'WAIT_SERVER_DEVIATION') {
+        const serverId = state.serverId!;
+        const value = parseFloat(ctx.message.text.replace('%', '').trim());
+        if (isNaN(value) || value < 5 || value > 99) {
+          await ctx.reply('❌ Введите число от 5 до 99. Попробуйте ещё раз или нажмите /start для отмены.');
+          return;
+        }
+        const newDeviation = Math.round(value * 10) / 10;
+        const serverConfigs = settings.serverConfigs || {};
+        const config = serverConfigs[serverId] || {
+          deviationPercent: settings.deviationPercent,
+          useGrid: settings.useGrid,
+          grids: settings.grids
+        };
+        serverConfigs[serverId] = { ...config, deviationPercent: newDeviation };
+        await this.userSubscriptionService.updateSettings(activeSub.id, { ...settings, serverConfigs });
+        await ctx.reply(`✅ Процент выгоды для *${serversArr[serverId]}* установлен: *${newDeviation}%*`, {
+          parse_mode: 'Markdown'
+        });
+        await this.redisService.del(`user_state:${userId}`);
+        await this.handleDeviationMenu(ctx);
       }
-      await this.redisService.del(`user_state:${userId}`);
-
-      // Вернуть в меню
-      await this.handleDeviationMenu(ctx);
     } catch (e: any) {
-      await ctx.reply(`❌ Ошибка сохранения сетки: ${e.message}\nПопробуйте еще раз или нажмите /start для отмены.`);
+      await ctx.reply(`❌ Ошибка: ${e.message}\nПопробуйте еще раз или нажмите /start для отмены.`);
     }
   }
 
@@ -168,7 +205,24 @@ export class MenuController {
   }
 
   private async handleSupport(ctx: Context) {
-    await ctx.editMessageText('👨‍💻 Связь с поддержкой и разработчиком: @floypi', {
+    const text =
+      '👨‍💻 Связь с поддержкой и разработчиком: @whoiseu либо на твинк (@floypi)\n\n' +
+      '💳 *Цены на подписки:*\n\n' +
+      '🖥 *Один сервер*\n' +
+      '   • Неделя — `150 руб`\n' +
+      '   • Месяц — `500 руб`\n\n' +
+      '🌆 *Вайс Сити*\n' +
+      '   • Неделя — `400 руб`\n' +
+      '   • Месяц — `1 200 руб`\n\n' +
+      '🌐 *Все серверы*\n' +
+      '   • Неделя — `500 руб`\n' +
+      '   • Месяц — `1 500 руб`\n\n' +
+      '👑 *Все серверы \\+ VC*\n' +
+      '   • Неделя — `700 руб`\n' +
+      '   • Месяц — `2 100 руб`\n\n' +
+      '━━━━━━━━━━━━━━━━━━━━\n' +
+      '📩 Для оформления подписки:\n👉 @whoiseu либо на твинк @floypi';
+    await ctx.editMessageText(text, {
       reply_markup: new InlineKeyboard().text('🔙 Главное меню', 'menu_main'),
       parse_mode: 'Markdown'
     });
@@ -191,10 +245,27 @@ export class MenuController {
   }
 
   private async handleBuy(ctx: Context) {
-    await ctx.editMessageText(
-      '💳 *Покупка подписки*\n\nДля оформления подписки обратитесь к администратору:\n👉 @floypi',
-      { reply_markup: new InlineKeyboard().text('🔙 Назад', 'menu_subs'), parse_mode: 'Markdown' }
-    );
+    const text =
+      '💳 *Покупка подписки*\n\n' +
+      '📋 *Тарифные планы:*\n\n' +
+      '🖥 *Один сервер*\n' +
+      '   • Неделя — `150 руб`\n' +
+      '   • Месяц — `500 руб`\n\n' +
+      '🌆 *Вайс Сити*\n' +
+      '   • Неделя — `400 руб`\n' +
+      '   • Месяц — `1 200 руб`\n\n' +
+      '🌐 *Все серверы*\n' +
+      '   • Неделя — `500 руб`\n' +
+      '   • Месяц — `1 500 руб`\n\n' +
+      '👑 *Все серверы \\+ VC*\n' +
+      '   • Неделя — `700 руб`\n' +
+      '   • Месяц — `2 100 руб`\n\n' +
+      '━━━━━━━━━━━━━━━━━━━━\n' +
+      '📩 Для оформления подписки:\n👉 @whoiseu либо на твинк (@floypi)';
+    await ctx.editMessageText(text, {
+      reply_markup: new InlineKeyboard().text('🔙 Назад', 'menu_subs'),
+      parse_mode: 'MarkdownV2'
+    });
   }
 
   private async handleSettings(ctx: Context) {
@@ -203,7 +274,7 @@ export class MenuController {
     if (!activeSub) return await ctx.answerCallbackQuery({ text: '❌ Подписка не активна!', show_alert: true });
 
     const keyboard = new InlineKeyboard()
-      .text('📊 Процент выгоды (Сетки)', 'menu_settings_deviation')
+      .text('📊 Процент выгоды', 'menu_settings_deviation')
       .row()
       .text('🌐 Серверы', 'menu_settings_servers')
       .row()
@@ -261,7 +332,11 @@ export class MenuController {
       keyboard.text('📝 Редактировать СЕТКУ', 'dev_global_edit_grid').row();
     } else {
       text += `Режим: 🟩 *ЕДИНЫЙ ПРОЦЕНТ*\nСделки будут приходить если выгода больше: *${settings.deviationPercent}%*\n`;
-      keyboard.text('➖ (-5%)', 'settings_dev_minus').text('➕ (+5%)', 'settings_dev_plus').row();
+      keyboard
+        .text('➖ (-5%)', 'settings_dev_minus')
+        .text('✏️ Ввести', 'dev_global_set_deviation')
+        .text('➕ (+5%)', 'settings_dev_plus')
+        .row();
       keyboard.text('🔄 Переключить на СЕТКУ ПРОЦЕНТОВ', 'dev_global_toggle_grid').row();
     }
 
@@ -310,9 +385,6 @@ export class MenuController {
     if (!activeSub) return;
 
     const settings = activeSub.settings as unknown as MarketAlertSettings;
-    const serverConfigs = settings.serverConfigs || {};
-
-    // Clear all server configs so they fallback to global
     await this.userSubscriptionService.updateSettings(activeSub.id, { ...settings, serverConfigs: {} });
     await ctx.answerCallbackQuery({ text: '✅ Глобальные настройки применены ко всем серверам!', show_alert: true });
   }
@@ -405,7 +477,11 @@ export class MenuController {
       keyboard.text('📝 Редактировать СЕТКУ', `dev_srv_edit_grid_${serverId}`).row();
     } else {
       text += `Режим: 🟩 *ЕДИНЫЙ ПРОЦЕНТ*\nВыгода для этого сервера: *${serverConfig.deviationPercent}%*\n`;
-      keyboard.text('➖ (-5%)', `dev_srv_${serverId}_minus`).text('➕ (+5%)', `dev_srv_${serverId}_plus`).row();
+      keyboard
+        .text('➖ (-5%)', `dev_srv_${serverId}_minus`)
+        .text('✏️ Ввести', `dev_srv_set_deviation_${serverId}`)
+        .text('➕ (+5%)', `dev_srv_${serverId}_plus`)
+        .row();
       keyboard.text('🔄 Переключить на СЕТКУ ПРОЦЕНТОВ', `dev_srv_toggle_grid_${serverId}`).row();
     }
 
@@ -471,6 +547,33 @@ export class MenuController {
       reply_markup: new InlineKeyboard().text('Отмена', `menu_dev_server_${serverId}`),
       parse_mode: 'Markdown'
     });
+  }
+
+  private async handleGlobalSetDeviationPrompt(ctx: Context) {
+    const userId = ctx.from!.id.toString();
+    await this.redisService.set(`user_state:${userId}`, { action: 'WAIT_GLOBAL_DEVIATION' }, 300);
+    await ctx.editMessageText(
+      `✏️ *Ввод глобального процента выгоды*\n\nОтправьте сообщение с нужным процентом (от 1 до 99).\nМожно использовать дробные значения, например: *12.5*`,
+      {
+        reply_markup: new InlineKeyboard().text('Отмена', 'menu_dev_global'),
+        parse_mode: 'Markdown'
+      }
+    );
+    await ctx.answerCallbackQuery();
+  }
+
+  private async handleServerSetDeviationPrompt(ctx: Context) {
+    const userId = ctx.from!.id.toString();
+    const serverId = parseInt(ctx.match![1]!, 10);
+    await this.redisService.set(`user_state:${userId}`, { action: 'WAIT_SERVER_DEVIATION', serverId }, 300);
+    await ctx.editMessageText(
+      `✏️ *Ввод процента выгоды: ${serversArr[serverId]}*\n\nОтправьте сообщение с нужным процентом (от 1 до 99).\nМожно использовать дробные значения, например: *12.5*`,
+      {
+        reply_markup: new InlineKeyboard().text('Отмена', `menu_dev_server_${serverId}`),
+        parse_mode: 'Markdown'
+      }
+    );
+    await ctx.answerCallbackQuery();
   }
 
   // ============== ACCESS SETTINGS (SERVERS FILTER) ==============

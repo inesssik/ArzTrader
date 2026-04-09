@@ -65,7 +65,7 @@ export class NotificationService {
 
               const message =
                 `${icon} <b>${listing.itemName} | ${listing.quantity} шт.</b>\n\n` +
-                `💵 Цена:      <b>${listing.price.toLocaleString()}$</b> <i>(${deviation.toFixed(1)}%)</i>\n` +
+                `💵 Цена:          <b>${listing.price.toLocaleString()}$</b> <i>(${deviation.toFixed(1)}%)</i>\n` +
                 `♻️ Скупка VC: <b>${baseAvgPriceParsed.toLocaleString()}$</b>\n` +
                 `🚀 Выгода:    <b>+${profitParsed.toLocaleString()}$</b>\n\n` +
                 `🛒 <b>[${listing.serverId}] ${getServerName(listing.serverId)}</b> | Лавка: <b>${listing.lavkaUid}</b> | Продавец: <b>${listing.username}</b>`;
