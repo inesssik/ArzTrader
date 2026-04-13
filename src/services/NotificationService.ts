@@ -47,16 +47,12 @@ export class NotificationService {
             const isServerMatch = this.serversService.isServerMatch(settings, listing.serverId);
             const effectivePrice =
               listing.serverId === 0 ? listing.price * this.config.values.VC_PRICE_CURRENCY : listing.price;
-            const targetDeviation = this.serversService.getRequiredDeviation(
-              settings,
-              listing.serverId,
-              effectivePrice
-            );
+            const targetDeviation = this.serversService.getRequiredDeviation(settings, listing.serverId, effectivePrice);
             const isDeviationMatch = deviation >= targetDeviation;
-            const isMaxProfitMatch = !settings.maxProfit || profit >= settings.maxProfit
+            const isMaxProfitMatch = !settings.maxProfit || profit >= settings.maxProfit;
             if (isServerMatch && isDeviationMatch && isMaxProfitMatch) {
               const baseAvgPriceParsed = Math.round(
-                listing.serverId === 0 ? baseAvgPrice / this.config.values.VC_PRICE_CURRENCY : baseAvgPrice
+                listing.serverId === 0 && deal.isVCPrice ? baseAvgPrice / this.config.values.VC_PRICE_CURRENCY : baseAvgPrice
               );
 
               const icon = deviation >= 50 && profit >= 50000000 ? '🔥' : '✅';
@@ -64,10 +60,12 @@ export class NotificationService {
                 listing.serverId === 0 ? profit / this.config.values.VC_PRICE_CURRENCY : profit
               );
 
+              const buyLabel = deal.isVCPrice ? 'Скупка (VC)' : 'Скупка (SA)';
+
               const message =
                 `${icon} <b>${listing.itemName} | ${listing.quantity} шт.</b>\n\n` +
                 `💵 Цена:          <b>${listing.price.toLocaleString()}$</b> <i>(${deviation.toFixed(1)}%)</i>\n` +
-                `♻️ Скупка VC: <b>${baseAvgPriceParsed.toLocaleString()}$</b>\n` +
+                `♻️ ${buyLabel}: <b>${baseAvgPriceParsed.toLocaleString()}$</b>\n` +
                 `🚀 Выгода:    <b>+${profitParsed.toLocaleString()}$</b>\n\n` +
                 `🛒 <b>[${listing.serverId}] ${getServerName(listing.serverId)}</b> | Лавка: <b>${listing.lavkaUid}</b> | Продавец: <b>${listing.username}</b>`;
 

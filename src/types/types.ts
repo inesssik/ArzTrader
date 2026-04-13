@@ -36,7 +36,7 @@ export interface MarketAlertSettings {
   servers: number[] | 'ALL';
   allowedServers?: number[] | 'ALL'; // Новое поле для ограничения определенных серверов
   serverConfigs?: Record<number, ServerConfig>;
-  maxProfit?: number
+  maxProfit?: number;
 }
 
 export interface ProfitableDeal {
@@ -44,6 +44,7 @@ export interface ProfitableDeal {
   baseAvgPrice: number;
   deviation: number;
   profit: number;
+  isVCPrice: boolean;
 }
 
 export interface ParsedListing {

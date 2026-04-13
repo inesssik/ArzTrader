@@ -88,7 +88,8 @@ describe('E2E Grid Notifications', () => {
         },
         baseAvgPrice: 30_000_000,
         deviation: 30, // 30% dev, which is >= 20% grid requirement for 20m SA
-        profit: 10_000_000
+        profit: 10_000_000,
+        isVCPrice: true
       }
     ];
 
@@ -115,7 +116,8 @@ describe('E2E Grid Notifications', () => {
         },
         baseAvgPrice: 30_000_000, // Global SA avg
         deviation: 30, // 30% dev
-        profit: 10_000_000
+        profit: 10_000_000,
+        isVCPrice: true
       }
     ];
 
@@ -161,7 +163,8 @@ describe('E2E Grid Notifications', () => {
         },
         baseAvgPrice: 30_000_000, // Global SA avg
         deviation: 30, // 30% dev, greater than 20% grid requirement
-        profit: 10_000_000
+        profit: 10_000_000,
+        isVCPrice: true
       }
     ];
 

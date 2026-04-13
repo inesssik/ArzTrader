@@ -36,6 +36,7 @@ export class MarketOrchestrator {
 
             // Обновляем цены VC перед анализом обычных серверов
             this.marketAnalyzerService.updateVCPrices(parsedVCData);
+            this.marketAnalyzerService.updateGlobalBuyPrices(parsedVCData);
 
             const vcDeals = this.marketAnalyzerService.findProfitableDeals(parsedVCData);
             await this.notificationService.processAlerts(vcDeals);
@@ -55,6 +56,7 @@ export class MarketOrchestrator {
 
             if (rawData && rawData.length > 0) {
               const parsedData = parseGlobalMarket(rawData);
+              this.marketAnalyzerService.updateGlobalBuyPrices(parsedData);
               const deals = this.marketAnalyzerService.findProfitableDeals(parsedData);
               await this.notificationService.processAlerts(deals);
             }
