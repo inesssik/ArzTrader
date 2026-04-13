@@ -53,7 +53,8 @@ export class NotificationService {
               effectivePrice
             );
             const isDeviationMatch = deviation >= targetDeviation;
-            if (isServerMatch && isDeviationMatch) {
+            const isMaxProfitMatch = !settings.maxProfit || profit >= settings.maxProfit
+            if (isServerMatch && isDeviationMatch && isMaxProfitMatch) {
               const baseAvgPriceParsed = Math.round(
                 listing.serverId === 0 ? baseAvgPrice / this.config.values.VC_PRICE_CURRENCY : baseAvgPrice
               );
