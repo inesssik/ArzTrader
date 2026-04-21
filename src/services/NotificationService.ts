@@ -44,16 +44,16 @@ export class NotificationService {
               servers: 'ALL'
             };
 
-            const isServerMatch = this.serversService.isServerMatch(settings, listing.serverId);
             const effectivePrice =
               listing.serverId === 0 ? listing.price * this.config.values.VC_PRICE_CURRENCY : listing.price;
-            const targetDeviation = this.serversService.getRequiredDeviation(
-              settings,
-              listing.serverId,
-              effectivePrice
-            );
+            const targetDeviation = this.serversService.getRequiredDeviation(settings, listing.serverId, effectivePrice);
+
+            const isServerMatch = this.serversService.isServerMatch(settings, listing.serverId);
             const isDeviationMatch = deviation >= targetDeviation;
-            const isMaxProfitMatch = !settings.maxProfit || profit >= settings.maxProfit
+            const isMaxProfitMatch =
+              !settings.maxProfit ||
+              settings.maxProfit >= (listing.serverId === 0 ? profit * this.config.values.VC_PRICE_CURRENCY : profit);
+
             if (isServerMatch && isDeviationMatch && isMaxProfitMatch) {
               const baseAvgPriceParsed = Math.round(
                 listing.serverId === 0 ? baseAvgPrice / this.config.values.VC_PRICE_CURRENCY : baseAvgPrice
