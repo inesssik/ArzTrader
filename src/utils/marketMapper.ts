@@ -12,13 +12,13 @@ function resolveItemInfo(rawItem: string | number): { itemId: string; itemName: 
   if (braceIndex === -1) {
     return {
       itemId: rawItemId,
-      itemName: items[rawItemId] ?? 'Undefined'
+      itemName: items[rawItemId] ?? `Undefined (id: ${rawItemId})`
     };
   }
 
   const baseId = rawItemId.slice(0, braceIndex);
   const modifier = rawItemId.slice(braceIndex);
-  const baseName = items[baseId] ?? 'Undefined';
+  const baseName = items[baseId] ?? `Undefined (id: ${baseId})`;
 
   return {
     itemId: rawItemId,
